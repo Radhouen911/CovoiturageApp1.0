@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import defaultAvatar from "../assets/images/avatar.jpg";
 import { useAuth } from "../contexts/AuthContext";
@@ -15,16 +15,14 @@ const RideDetails = () => {
   const [bookingData, setBookingData] = useState({ seats_booked: 1 });
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
+  const [cardDetails, setCardDetails] = useState({
+    number: "",
+    expiry: "",
+    cvc: "",
+  });
+  const [paymentStatus, setPaymentStatus] = useState("pending");
 
-  useEffect(() => {
-    if (!ApiService.isAuthenticated()) {
-      navigate("/login");
-      return;
-    }
-    loadRideDetails();
-  }, [id, navigate]);
-
-  const loadRideDetails = async () => {
+  const loadRideDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -40,10 +38,34 @@ const RideDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    if (!ApiService.isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+    loadRideDetails();
+  }, [id, navigate, loadRideDetails]);
 
   const handleBookingChange = (field, value) => {
     setBookingData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCardChange = (field, value) => {
+    setCardDetails((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const simulatePayment = () => {
+    // Simulate payment based on card number (e.g., 4242-4242-4242-4242 for success)
+    const isValidTestCard =
+      cardDetails.number.replace(/\D/g, "") === "4242424242424242";
+    if (!isValidTestCard || !cardDetails.expiry || !cardDetails.cvc) {
+      setPaymentStatus("failed");
+      return false;
+    }
+    setPaymentStatus("succeeded");
+    return true;
   };
 
   const handleBooking = async () => {
@@ -52,7 +74,7 @@ const RideDetails = () => {
       return;
     }
     if (user?.role !== "passenger") {
-      setBookingError("Seuls les passagers peuvent réserver des trajets");
+      setBookingError("Seuls les passengers peuvent réserver des trajets");
       return;
     }
     if (user?.id === ride?.driver?.id) {
@@ -62,7 +84,25 @@ const RideDetails = () => {
     setBookingLoading(true);
     setBookingError("");
     try {
+      if (!simulatePayment()) {
+        setBookingError(
+          "Le paiement a échoué. Utilisez 4242-4242-4242-4242 pour un test réussi."
+        );
+        return;
+      }
+
+      const intent = await ApiService.createPaymentIntent(id);
+      const confirmation = await ApiService.confirmPayment({
+        payment_intent_id: intent.data.id,
+        amount: bookingData.seats_booked * ride.price * 100, // Convert to cents
+      });
+      if (confirmation.data.status !== "succeeded") {
+        setBookingError("Échec de la confirmation du paiement");
+        return;
+      }
+
       const response = await ApiService.bookRide(id, bookingData);
+      console.log("API Response:", response);
       if (response.success) {
         setShowBookingModal(false);
         navigate("/profilePage", {
@@ -174,7 +214,7 @@ const RideDetails = () => {
 
   return (
     <div className="container py-4">
-      <style jsx>{`
+      <style>{`
         .ride-details-card {
           border: none;
           border-radius: 15px;
@@ -203,6 +243,13 @@ const RideDetails = () => {
           font-size: 0.85rem;
           padding: 6px 12px;
           margin: 2px;
+        }
+        .card-input {
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          padding: 8px;
+          width: 100%;
+          margin-bottom: 10px;
         }
       `}</style>
 
@@ -282,7 +329,7 @@ const RideDetails = () => {
                   )}
                   <p>
                     <i className="fas fa-users me-2"></i>
-                    {ride.available_seats} places disponibles
+                    {ride.remaining_seats} places disponibles
                   </p>
                 </div>
                 <div className="col-md-6">
@@ -323,7 +370,7 @@ const RideDetails = () => {
           <div className="card booking-card">
             <div className="card-body">
               <h5 className="card-title">Réserver ce trajet</h5>
-              {ride.available_seats === 0 ? (
+              {ride.remaining_seats === 0 ? (
                 <div className="alert alert-warning">
                   <i className="fas fa-exclamation-triangle me-2"></i>
                   Ce trajet est complet
@@ -337,7 +384,7 @@ const RideDetails = () => {
                     </div>
                     <div className="d-flex justify-content-between mb-2">
                       <span>Places disponibles:</span>
-                      <strong>{ride.available_seats}</strong>
+                      <strong>{ride.remaining_seats}</strong>
                     </div>
                   </div>
                   {isLoggedIn &&
@@ -356,7 +403,7 @@ const RideDetails = () => {
                             )
                           }
                         >
-                          {[...Array(Math.min(ride.available_seats, 4))].map(
+                          {[...Array(Math.min(ride.remaining_seats, 4))].map(
                             (_, i) => (
                               <option key={i} value={i + 1}>
                                 {i + 1} place{i > 0 ? "s" : ""}
@@ -378,7 +425,7 @@ const RideDetails = () => {
                           className="btn btn-primary btn-lg"
                           onClick={() => setShowBookingModal(true)}
                           disabled={
-                            ride.available_seats === 0 || bookingLoading
+                            ride.remaining_seats === 0 || bookingLoading
                           }
                         >
                           Demander à rejoindre
@@ -399,7 +446,7 @@ const RideDetails = () => {
                     <div className="alert alert-info">
                       <small>
                         {user?.role !== "passenger"
-                          ? "Seuls les passagers peuvent réserver des trajets"
+                          ? "Seuls les passengers peuvent réserver des trajets"
                           : "Vous ne pouvez pas réserver votre propre trajet"}
                       </small>
                     </div>
@@ -428,7 +475,7 @@ const RideDetails = () => {
           <div className="modal-dialog">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Confirmer la demande</h5>
+                <h5 className="modal-title">Confirmer la demande et payer</h5>
                 <button
                   type="button"
                   className="btn-close"
@@ -457,6 +504,35 @@ const RideDetails = () => {
                     <strong>Prix total:</strong> {totalPrice} TND
                   </div>
                 </div>
+                <div className="mt-3">
+                  <h6>Détails de la carte</h6>
+                  <input
+                    type="text"
+                    className="card-input"
+                    placeholder="Numéro de carte (ex: 4242-4242-4242-4242)"
+                    value={cardDetails.number}
+                    onChange={(e) => handleCardChange("number", e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="card-input"
+                    placeholder="Expiration (MM/YY)"
+                    value={cardDetails.expiry}
+                    onChange={(e) => handleCardChange("expiry", e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="card-input"
+                    placeholder="CVC"
+                    value={cardDetails.cvc}
+                    onChange={(e) => handleCardChange("cvc", e.target.value)}
+                  />
+                  <small className="text-muted">
+                    Utilisez 4242-4242-4242-4242 avec une date future et un CVC
+                    valide pour un paiement réussi (simulation).
+                  </small>
+                  <p>Statut: {paymentStatus}</p>
+                </div>
               </div>
               <div className="modal-footer">
                 <button
@@ -479,7 +555,7 @@ const RideDetails = () => {
                       Envoi...
                     </>
                   ) : (
-                    "Envoyer la demande"
+                    "Payer et envoyer la demande"
                   )}
                 </button>
               </div>

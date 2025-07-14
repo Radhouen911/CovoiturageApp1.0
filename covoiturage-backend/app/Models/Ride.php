@@ -31,6 +31,8 @@ class Ride extends Model
         'price' => 'decimal:2',
     ];
 
+    protected $appends = ['remaining_seats'];
+
     // Relationships
     public function driver()
     {
@@ -45,7 +47,7 @@ class Ride extends Model
     // Helper methods
     public function getRemainingSeatsAttribute()
     {
-        return $this->available_seats - $this->bookings()->where('status', 'confirmed')->sum('seats_booked');
+        return $this->available_seats - $this->bookings()->where('status', 'accepted')->sum('seats_booked');
     }
 
     public function isAvailable()

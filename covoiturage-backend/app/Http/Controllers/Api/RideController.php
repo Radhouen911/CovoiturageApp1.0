@@ -10,33 +10,43 @@ use Illuminate\Support\Facades\Validator;
 class RideController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = Ride::with('driver')->where('status', 'active');
+{
+    $query = Ride::with('driver')->where('status', 'active');
 
-        // Search filters
-        if ($request->has('from')) {
-            $query->where('from', 'like', '%' . $request->from . '%');
-        }
+    // Debug: Log the raw query before filters
+    \Log::info('Initial Ride Query: ' . $query->toSql());
 
-        if ($request->has('to')) {
-            $query->where('to', 'like', '%' . $request->to . '%');
-        }
-
-        if ($request->has('date')) {
-            $query->whereDate('date', $request->date);
-        }
-
-        if ($request->has('seats')) {
-            $query->where('available_seats', '>=', $request->seats);
-        }
-
-        $rides = $query->orderBy('date')->orderBy('time')->paginate(10);
-
-        return response()->json([
-            'success' => true,
-            'data' => $rides
-        ]);
+    // Search filters
+    if ($request->has('from')) {
+        $query->where('from', 'like', '%' . $request->from . '%');
+        \Log::info('Filter applied: from = ' . $request->from);
     }
+
+    if ($request->has('to')) {
+        $query->where('to', 'like', '%' . $request->to . '%');
+        \Log::info('Filter applied: to = ' . $request->to);
+    }
+
+    if ($request->has('date')) {
+        $query->whereDate('date', $request->date);
+        \Log::info('Filter applied: date = ' . $request->date);
+    }
+
+    if ($request->has('seats')) {
+        $query->where('available_seats', '>=', $request->seats);
+        \Log::info('Filter applied: seats >= ' . $request->seats);
+    }
+
+    // Fallback to return all active rides if no filters
+    $rides = $query->orderBy('date')->orderBy('time')->paginate(10);
+
+    \Log::info('Final Ride Query Result Count: ' . $rides->count());
+
+    return response()->json([
+        'success' => true,
+        'data' => $rides
+    ]);
+}
 
     public function store(Request $request)
     {

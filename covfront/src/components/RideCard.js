@@ -38,7 +38,7 @@ const RideCard = ({ ride }) => {
 
   return (
     <div className="card ride-card shadow-sm">
-      <style jsx>{`
+      <style>{`
         .ride-card {
           border: none;
           border-radius: 15px;
@@ -130,7 +130,7 @@ const RideCard = ({ ride }) => {
           <div className="col-md-2 text-center">
             <div className="seats-info">
               <i className="fas fa-user-friends me-1"></i>
-              <span className="fw-bold">{ride.available_seats}</span>
+              <span className="fw-bold">{ride.remaining_seats}</span>
               <small className="text-muted"> places libres</small>
             </div>
             {ride.car && (

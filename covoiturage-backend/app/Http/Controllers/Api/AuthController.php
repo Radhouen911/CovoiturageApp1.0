@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -102,6 +103,101 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => $request->user()
+        ]);
+    }
+
+    public function update(Request $request)
+    {
+        $user = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'sometimes|nullable|string|max:20',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation errors',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user->update($request->only(['name', 'email', 'phone']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil mis à jour avec succès',
+            'data' => $user
+        ]);
+    }
+
+    public function uploadAvatar(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            // Log the request for debugging
+            \Log::info('Avatar upload request', [
+                'user_id' => $user->id,
+                'has_file' => $request->hasFile('avatar'),
+                'all_files' => $request->allFiles(),
+                'content_type' => $request->header('Content-Type')
+            ]);
+
+            $request->validate([
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            // Delete old avatar if exists
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $file = $request->file('avatar');
+
+            if (!$file) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aucun fichier trouvé'
+                ], 400);
+            }
+
+            $path = $file->store('avatars', 'public');
+            $user->avatar = $path;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar mis à jour',
+                'data' => $user
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Avatar upload error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du téléchargement: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteAvatar(Request $request)
+    {
+        $user = $request->user();
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+            $user->avatar = null;
+            $user->save();
+        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Avatar supprimé',
+            'data' => $user
         ]);
     }
 }

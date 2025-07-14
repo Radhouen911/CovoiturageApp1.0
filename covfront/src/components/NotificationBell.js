@@ -42,7 +42,7 @@ const NotificationBell = () => {
     try {
       const response = await ApiService.getUnreadNotificationsCount();
       if (response.success) {
-        setUnreadCount(response.data.count);
+        setUnreadCount(response.data.unread_count);
       }
     } catch (error) {
       console.error("Error loading unread count:", error);
@@ -131,7 +131,7 @@ const NotificationBell = () => {
 
   return (
     <div className="position-relative">
-      <style jsx>{`
+      <style>{`
         .notification-bell {
           position: relative;
           cursor: pointer;

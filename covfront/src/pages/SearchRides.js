@@ -1,486 +1,661 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import RideCard from "../components/RideCard";
-import SearchForm from "../components/SearchForm";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FaCalendar,
+  FaCar,
+  FaFilter,
+  FaHeart,
+  FaMapMarkerAlt,
+  FaSearch,
+  FaShare,
+  FaSort,
+  FaStar,
+  FaUser,
+} from "react-icons/fa";
+import { Link } from "react-router-dom";
 import ApiService from "../services/api";
 
 const SearchRides = () => {
-  const location = useLocation();
   const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [searchParams, setSearchParams] = useState({
+  const [filters, setFilters] = useState({
     from: "",
     to: "",
     date: "",
     passengers: 1,
-  });
-  const [filters, setFilters] = useState({
-    priceRange: [0, 100],
-    departureTime: "",
-    sortBy: "price",
-    minSeats: 1,
+    priceMin: "",
+    priceMax: "",
     amenities: [],
-    minRating: 0,
   });
+  const [sortBy, setSortBy] = useState("date");
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const departInputRef = useRef(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const amenities = [
+    { id: "wifi", label: "WiFi", icon: "📶" },
+    { id: "music", label: "Musique", icon: "🎵" },
+    { id: "smoking", label: "Fumeur", icon: "🚬" },
+    { id: "pets", label: "Animaux", icon: "🐕" },
+    { id: "luggage", label: "Bagages", icon: "💼" },
+    { id: "ac", label: "Climatisation", icon: "❄️" },
+  ];
+
+  const fetchRides = useCallback(
+    async (userInitiated = false) => {
+      setLoading(true);
+      if (userInitiated) setHasSearched(true);
+      try {
+        const params = {
+          page: currentPage,
+          sort: sortBy,
+          from: filters.from || undefined,
+          to: filters.to || undefined,
+          date: filters.date || undefined,
+          seats: filters.passengers || undefined,
+          min_price: filters.priceMin || undefined,
+          max_price: filters.priceMax || undefined,
+          amenities: filters.amenities.length
+            ? filters.amenities.join(",")
+            : undefined,
+        };
+        // Clean undefined params
+        const cleanParams = Object.fromEntries(
+          Object.entries(params).filter(([_, v]) => v !== undefined && v !== "")
+        );
+        console.log("Cleaned Params:", cleanParams);
+
+        const response = await ApiService.searchRides(cleanParams);
+        console.log("API Response Data:", JSON.stringify(response, null, 2));
+
+        if (!response.success) {
+          throw new Error("API request failed");
+        }
+
+        setRides(response.data || []);
+        setTotalPages(response.totalPages || 1);
+      } catch (error) {
+        console.error("Fetch Error:", error.message);
+        setRides([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [filters, sortBy, currentPage]
+  );
 
   useEffect(() => {
-    // Check if there are search params from navigation state
-    if (location.state?.searchData) {
-      setSearchParams(location.state.searchData);
-      searchRides(location.state.searchData);
-    } else {
-      // Load all available rides initially
-      loadAllRides();
-    }
-  }, [location.state]);
+    fetchRides();
+  }, [fetchRides]);
 
-  const loadAllRides = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const response = await ApiService.searchRides({});
-
-      if (response.success) {
-        setRides(response.data.data || []);
-      } else {
-        setError(response.message || "Erreur lors du chargement des trajets");
-      }
-    } catch (error) {
-      console.error("Error loading rides:", error);
-      setError("Erreur de connexion. Vérifiez que le serveur est démarré.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (departInputRef.current) {
+      departInputRef.current.focus();
     }
+  }, []);
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+    setHasSearched(true);
   };
 
-  const searchRides = async (searchData) => {
-    try {
-      setLoading(true);
-      setError("");
-      setSearchParams(searchData);
-
-      const response = await ApiService.searchRides(searchData);
-
-      if (response.success) {
-        setRides(response.data.data || []);
-      } else {
-        setError(response.message || "Erreur lors de la recherche");
-      }
-    } catch (error) {
-      console.error("Error searching rides:", error);
-      setError("Erreur de connexion. Vérifiez que le serveur est démarré.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleNewSearch = (searchData) => {
-    console.log("New search:", searchData);
-    searchRides(searchData);
-  };
-
-  const filteredRides = rides.filter((ride) => {
-    // Price filter
-    const isWithinPrice =
-      ride.price >= filters.priceRange[0] &&
-      ride.price <= filters.priceRange[1];
-
-    // Time filter
-    const rideHour = Number.parseInt(ride.time.split(":")[0]);
-    let isWithinTime = true;
-    if (filters.departureTime === "morning") {
-      isWithinTime = rideHour >= 6 && rideHour < 12;
-    } else if (filters.departureTime === "afternoon") {
-      isWithinTime = rideHour >= 12 && rideHour < 18;
-    } else if (filters.departureTime === "evening") {
-      isWithinTime = rideHour >= 18 && rideHour < 24;
-    }
-
-    // Seats filter
-    const hasEnoughSeats = ride.available_seats >= filters.minSeats;
-
-    // Amenities filter (if your backend supports amenities)
-    const hasSelectedAmenities =
-      filters.amenities.length === 0 ||
-      (ride.amenities &&
-        filters.amenities.every((amenity) => ride.amenities.includes(amenity)));
-
-    // Rating filter (if your backend supports driver ratings)
-    const meetsRating =
-      !ride.driver?.rating || ride.driver.rating >= filters.minRating;
-
-    return (
-      isWithinPrice &&
-      isWithinTime &&
-      hasEnoughSeats &&
-      hasSelectedAmenities &&
-      meetsRating
-    );
-  });
-
-  const sortedRides = [...filteredRides].sort((a, b) => {
-    switch (filters.sortBy) {
-      case "price":
-        return a.price - b.price;
-      case "time":
-        return a.time.localeCompare(b.time);
-      case "rating":
-        return (b.driver?.rating || 0) - (a.driver?.rating || 0);
-      case "date":
-        return new Date(a.date) - new Date(b.date);
-      default:
-        return 0;
-    }
-  });
-
-  const handleAmenityChange = (amenity) => {
+  const handleAmenityChange = (amenityId) => {
     setFilters((prev) => ({
       ...prev,
-      amenities: prev.amenities.includes(amenity)
-        ? prev.amenities.filter((a) => a !== amenity)
-        : [...prev.amenities, amenity],
+      amenities: prev.amenities.includes(amenityId)
+        ? prev.amenities.filter((id) => id !== amenityId)
+        : [...prev.amenities, amenityId],
     }));
+    setCurrentPage(1);
+    setHasSearched(true);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      from: "",
+      to: "",
+      date: "",
+      passengers: 1,
+      priceMin: "",
+      priceMax: "",
+      amenities: [],
+    });
+    setCurrentPage(1);
+    setHasSearched(false);
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("fr-FR", {
+      weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
   };
 
-  if (loading) {
-    return (
-      <div className="container py-4">
-        <div className="row justify-content-center">
-          <div className="col-md-6 text-center">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Chargement...</span>
-            </div>
-            <p className="mt-3">Recherche des trajets disponibles...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formatTime = (timeString) => {
+    return timeString.substring(0, 5);
+  };
 
-  if (error) {
-    return (
-      <div className="container py-4">
-        <div className="row justify-content-center">
-          <div className="col-md-8">
-            <div className="alert alert-danger text-center">
-              <i className="fas fa-exclamation-triangle fa-2x mb-3"></i>
-              <h4>Erreur de chargement</h4>
-              <p>{error}</p>
-              <button
-                onClick={() =>
-                  searchParams.from ? searchRides(searchParams) : loadAllRides()
-                }
-                className="btn btn-primary"
-              >
-                <i className="fas fa-redo me-2"></i>
-                Réessayer
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const formatPrice = (price) => {
+    return `${price}€`;
+  };
+
+  const getRatingStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <FaStar
+        key={i}
+        className={i < rating ? "text-warning" : "text-muted"}
+        size={14}
+      />
+    ));
+  };
+
+  const isDefaultFilters =
+    !filters.from &&
+    !filters.to &&
+    !filters.date &&
+    !filters.priceMin &&
+    !filters.priceMax &&
+    (!filters.amenities || filters.amenities.length === 0);
+
+  console.log("Rides to render:", rides);
 
   return (
-    <div className="container py-4">
-      <style jsx>{`
-        .search-header {
-          background: linear-gradient(135deg, #007bff, #0056b3);
-          color: white;
-          border-radius: 15px;
-          padding: 20px;
-          margin-bottom: 30px;
-        }
-        .filter-card {
-          border: none;
-          border-radius: 15px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        .results-header {
-          background: #f8f9fa;
-          border-radius: 10px;
-          padding: 15px;
-          margin-bottom: 20px;
-        }
-        .no-results {
-          text-align: center;
-          padding: 60px 20px;
-          background: #f8f9fa;
-          border-radius: 15px;
-        }
-        .search-summary {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 10px;
-          padding: 15px;
-          margin-top: 15px;
-        }
-      `}</style>
+    <div className="search-rides-page">
+      <div className="container py-5">
+        <div className="row mb-5">
+          <div className="col-12">
+            <h1 className="gradient-text mb-3">Rechercher un trajet</h1>
+            <p className="text-muted">
+              Trouvez le covoiturage parfait pour votre voyage
+            </p>
+          </div>
+        </div>
 
-      <div className="row">
-        {/* Search Sidebar */}
-        <div className="col-lg-3 mb-4">
-          <div className="card filter-card">
-            <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">
-                <i className="fas fa-search me-2"></i>
-                Nouvelle recherche
-              </h5>
-            </div>
-            <div className="card-body">
-              <SearchForm
-                onSearch={handleNewSearch}
-                initialData={searchParams}
-              />
-
-              {/* Display current search summary */}
-              {(searchParams.from || searchParams.to) && (
-                <div className="search-summary mt-3">
-                  <small className="text-muted">Recherche actuelle:</small>
-                  <div className="mt-1">
-                    {searchParams.from && (
-                      <div>
-                        <strong>De:</strong> {searchParams.from}
-                      </div>
-                    )}
-                    {searchParams.to && (
-                      <div>
-                        <strong>Vers:</strong> {searchParams.to}
-                      </div>
-                    )}
-                    {searchParams.date && (
-                      <div>
-                        <strong>Date:</strong> {formatDate(searchParams.date)}
-                      </div>
-                    )}
-                    {searchParams.passengers && (
-                      <div>
-                        <strong>Passagers:</strong> {searchParams.passengers}
-                      </div>
-                    )}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="card search-card">
+              <div className="card-body p-4">
+                <div className="row g-3">
+                  <div className="col-md-3">
+                    <div className="form-group">
+                      <label className="form-label">
+                        <FaMapMarkerAlt className="me-2" />
+                        Départ
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ville de départ"
+                        value={filters.from}
+                        onChange={(e) =>
+                          handleFilterChange("from", e.target.value)
+                        }
+                        ref={departInputRef}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="form-group">
+                      <label className="form-label">
+                        <FaMapMarkerAlt className="me-2" />
+                        Destination
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ville d'arrivée"
+                        value={filters.to}
+                        onChange={(e) =>
+                          handleFilterChange("to", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-2">
+                    <div className="form-group">
+                      <label className="form-label">
+                        <FaCalendar className="me-2" />
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={filters.date}
+                        onChange={(e) =>
+                          handleFilterChange("date", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-2">
+                    <div className="form-group">
+                      <label className="form-label">
+                        <FaUser className="me-2" />
+                        Passagers
+                      </label>
+                      <select
+                        className="form-control"
+                        value={filters.passengers}
+                        onChange={(e) =>
+                          handleFilterChange(
+                            "passengers",
+                            parseInt(e.target.value)
+                          )
+                        }
+                      >
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option key={num} value={num}>
+                            {num}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-md-2">
+                    <div className="form-group">
+                      <label className="form-label"> </label>
+                      <button
+                        className="btn btn-primary w-100"
+                        onClick={() => fetchRides(true)}
+                      >
+                        <FaSearch className="me-2" />
+                        Rechercher
+                      </button>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card filter-card mt-3">
-            <div className="card-header">
-              <h5 className="mb-0">
-                <i className="fas fa-filter me-2"></i>
-                Filtres
-              </h5>
-            </div>
-            <div className="card-body">
-              <div className="mb-3">
-                <label className="form-label">Trier par</label>
-                <select
-                  className="form-select"
-                  value={filters.sortBy}
-                  onChange={(e) =>
-                    setFilters({ ...filters, sortBy: e.target.value })
-                  }
-                >
-                  <option value="price">Prix croissant</option>
-                  <option value="time">Heure de départ</option>
-                  <option value="date">Date</option>
-                  <option value="rating">Note du conducteur</option>
-                </select>
               </div>
-
-              <div className="mb-3">
-                <label className="form-label">Plage de prix (TND)</label>
-                <div className="d-flex align-items-center">
-                  <input
-                    type="range"
-                    className="form-range me-2"
-                    min="0"
-                    max="100"
-                    value={filters.priceRange[0]}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        priceRange: [
-                          Number.parseInt(e.target.value),
-                          filters.priceRange[1],
-                        ],
-                      })
-                    }
-                  />
-                  <input
-                    type="range"
-                    className="form-range"
-                    min="0"
-                    max="100"
-                    value={filters.priceRange[1]}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        priceRange: [
-                          filters.priceRange[0],
-                          Number.parseInt(e.target.value),
-                        ],
-                      })
-                    }
-                  />
-                </div>
-                <div className="d-flex justify-content-between">
-                  <small>{filters.priceRange[0]} TND</small>
-                  <small>{filters.priceRange[1]} TND</small>
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Heure de départ</label>
-                <select
-                  className="form-select"
-                  value={filters.departureTime}
-                  onChange={(e) =>
-                    setFilters({ ...filters, departureTime: e.target.value })
-                  }
-                >
-                  <option value="">Toute la journée</option>
-                  <option value="morning">Matin (6h-12h)</option>
-                  <option value="afternoon">Après-midi (12h-18h)</option>
-                  <option value="evening">Soir (18h-24h)</option>
-                </select>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Places minimum</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  min="1"
-                  max="8"
-                  value={filters.minSeats}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      minSeats: Number.parseInt(e.target.value) || 1,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Note minimum du conducteur</label>
-                <select
-                  className="form-select"
-                  value={filters.minRating}
-                  onChange={(e) =>
-                    setFilters({
-                      ...filters,
-                      minRating: Number.parseFloat(e.target.value),
-                    })
-                  }
-                >
-                  <option value="0">Toutes</option>
-                  <option value="3">3.0+</option>
-                  <option value="4">4.0+</option>
-                  <option value="4.5">4.5+</option>
-                  <option value="4.8">4.8+</option>
-                </select>
-              </div>
-
-              <button
-                className="btn btn-outline-secondary btn-sm w-100"
-                onClick={() =>
-                  setFilters({
-                    priceRange: [0, 100],
-                    departureTime: "",
-                    sortBy: "price",
-                    minSeats: 1,
-                    amenities: [],
-                    minRating: 0,
-                  })
-                }
-              >
-                <i className="fas fa-times me-1"></i>
-                Réinitialiser les filtres
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Results */}
-        <div className="col-lg-9">
-          <div className="results-header">
-            <div className="d-flex justify-content-between align-items-center">
-              <h2 className="mb-0">
-                <i className="fas fa-car me-2"></i>
-                Trajets disponibles
-              </h2>
-              <div className="text-end">
-                <span className="badge bg-primary fs-6">
-                  {sortedRides.length} trajet
-                  {sortedRides.length !== 1 ? "s" : ""} trouvé
-                  {sortedRides.length !== 1 ? "s" : ""}
-                </span>
-                {filteredRides.length !== rides.length && (
-                  <div className="small text-muted mt-1">
-                    ({rides.length} total{rides.length !== 1 ? "s" : ""} avant
-                    filtrage)
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
+              <div className="d-flex gap-2">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <FaFilter className="me-2" />
+                  Filtres
+                </button>
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={clearFilters}
+                >
+                  Effacer
+                </button>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <FaSort className="text-muted" />
+                <select
+                  className="form-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="date">Date</option>
+                  <option value="price">Prix</option>
+                  <option value="time">Heure de départ</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {showFilters && (
+          <div className="row mb-4 fade-in">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-body">
+                  <h6 className="card-title mb-3">Filtres avancés</h6>
+                  <div className="row g-3">
+                    <div className="col-md-3">
+                      <label className="form-label">Prix minimum</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="0€"
+                        value={filters.priceMin}
+                        onChange={(e) =>
+                          handleFilterChange("priceMin", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="col-md-3">
+                      <label className="form-label">Prix maximum</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="100€"
+                        value={filters.priceMax}
+                        onChange={(e) =>
+                          handleFilterChange("priceMax", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Équipements</label>
+                      <div className="d-flex flex-wrap gap-2">
+                        {amenities.map((amenity) => (
+                          <button
+                            key={amenity.id}
+                            className={`btn btn-sm ${
+                              filters.amenities.includes(amenity.id)
+                                ? "btn-primary"
+                                : "btn-outline-primary"
+                            }`}
+                            onClick={() => handleAmenityChange(amenity.id)}
+                          >
+                            <span className="me-1">{amenity.icon}</span>
+                            {amenity.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="row">
+          <div className="col-12">
+            {loading ? (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Chargement...</span>
+                </div>
+                <p className="mt-3 text-muted">Recherche en cours...</p>
+              </div>
+            ) : rides.length === 0 && hasSearched ? (
+              <div className="text-center py-5">
+                <FaCar size={64} className="text-muted mb-3" />
+                <h4 className="text-muted">Aucun trajet trouvé</h4>
+                <p className="text-muted">
+                  Essayez de modifier vos critères de recherche
+                </p>
+              </div>
+            ) : Array.isArray(rides) && rides.length > 0 ? (
+              <>
+                {isDefaultFilters && (
+                  <h3 className="mb-4 gradient-text">Suggestions</h3>
+                )}
+                <div className="row g-4">
+                  {rides.map((ride) => (
+                    <div className="col-lg-6 col-xl-4" key={ride.id}>
+                      <div className="card ride-card h-100">
+                        <div className="card-header bg-gradient text-white">
+                          <div className="d-flex justify-content-between align-items-center">
+                            <div>
+                              <h6 className="mb-1">
+                                {ride.driver?.name || "Conducteur"}
+                              </h6>
+                              <div className="rating">
+                                {getRatingStars(ride.driver?.rating || 0)}
+                                <span className="ms-2 text-white-50">
+                                  ({ride.driver?.rating || 0}/5)
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-end">
+                              <div className="price-display">
+                                <span className="amount">
+                                  {formatPrice(ride.price)}
+                                </span>
+                                <span className="currency">par personne</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="card-body">
+                          <div className="route-info mb-3">
+                            <div className="d-flex align-items-center mb-2">
+                              <div className="route-dot bg-success"></div>
+                              <span className="fw-bold">{ride.from}</span>
+                            </div>
+                            <div className="route-line"></div>
+                            <div className="d-flex align-items-center">
+                              <div className="route-dot bg-danger"></div>
+                              <span className="fw-bold">{ride.to}</span>
+                            </div>
+                          </div>
+
+                          <div className="ride-details mb-3">
+                            <div className="row g-2">
+                              <div className="col-6">
+                                <small className="text-muted">Date</small>
+                                <div className="fw-bold">
+                                  {formatDate(ride.date)}
+                                </div>
+                              </div>
+                              <div className="col-6">
+                                <small className="text-muted">Heure</small>
+                                <div className="fw-bold">
+                                  {formatTime(ride.time)}
+                                </div>
+                              </div>
+                              <div className="col-6">
+                                <small className="text-muted">Places</small>
+                                <div className="fw-bold">
+                                  {ride.remaining_seats}/{ride.total_seats}
+                                </div>
+                              </div>
+                              <div className="col-6">
+                                <small className="text-muted">Durée</small>
+                                <div className="fw-bold">
+                                  {ride.duration || "N/A"}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {ride.amenities && ride.amenities.length > 0 && (
+                            <div className="amenities mb-3">
+                              <small className="text-muted d-block mb-2">
+                                Équipements
+                              </small>
+                              <div className="d-flex flex-wrap gap-1">
+                                {ride.amenities.map((amenity) => (
+                                  <span
+                                    key={amenity}
+                                    className="badge bg-light text-dark"
+                                  >
+                                    {amenity}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="card-actions">
+                            <Link
+                              to={`/ride/${ride.id}`}
+                              className="btn btn-primary w-100 mb-2"
+                            >
+                              Voir les détails
+                            </Link>
+                            <div className="d-flex gap-2">
+                              <button className="btn btn-outline-primary flex-fill">
+                                <FaHeart className="me-1" />
+                                Favoris
+                              </button>
+                              <button className="btn btn-outline-secondary flex-fill">
+                                <FaShare className="me-1" />
+                                Partager
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="row mt-5">
+                    <div className="col-12">
+                      <nav aria-label="Pagination des trajets">
+                        <ul className="pagination justify-content-center">
+                          <li
+                            className={`page-item ${
+                              currentPage === 1 ? "disabled" : ""
+                            }`}
+                          >
+                            <button
+                              className="page-link"
+                              onClick={() => setCurrentPage(currentPage - 1)}
+                              disabled={currentPage === 1}
+                            >
+                              Précédent
+                            </button>
+                          </li>
+                          {Array.from(
+                            { length: totalPages },
+                            (_, i) => i + 1
+                          ).map((page) => (
+                            <li
+                              key={page}
+                              className={`page-item ${
+                                currentPage === page ? "active" : ""
+                              }`}
+                            >
+                              <button
+                                className="page-link"
+                                onClick={() => setCurrentPage(page)}
+                              >
+                                {page}
+                              </button>
+                            </li>
+                          ))}
+                          <li
+                            className={`page-item ${
+                              currentPage === totalPages ? "disabled" : ""
+                            }`}
+                          >
+                            <button
+                              className="page-link"
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                            >
+                              Suivant
+                            </button>
+                          </li>
+                        </ul>
+                      </nav>
+                    </div>
                   </div>
                 )}
-              </div>
-            </div>
+              </>
+            ) : null}
           </div>
-
-          {sortedRides.length === 0 ? (
-            <div className="no-results">
-              <i className="fas fa-search fa-4x text-muted mb-4"></i>
-              <h4>Aucun trajet trouvé</h4>
-              <p className="text-muted mb-4">
-                {rides.length === 0
-                  ? "Aucun trajet n'est disponible pour le moment."
-                  : "Aucun trajet ne correspond à vos critères de recherche."}
-              </p>
-              {rides.length > 0 && (
-                <button
-                  className="btn btn-outline-primary me-2"
-                  onClick={() =>
-                    setFilters({
-                      priceRange: [0, 100],
-                      departureTime: "",
-                      sortBy: "price",
-                      minSeats: 1,
-                      amenities: [],
-                      minRating: 0,
-                    })
-                  }
-                >
-                  <i className="fas fa-filter me-1"></i>
-                  Réinitialiser les filtres
-                </button>
-              )}
-              <button className="btn btn-primary" onClick={loadAllRides}>
-                <i className="fas fa-redo me-1"></i>
-                Actualiser
-              </button>
-            </div>
-          ) : (
-            <div className="row g-3">
-              {sortedRides.map((ride) => (
-                <div key={ride.id} className="col-12">
-                  <RideCard ride={ride} />
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
+
+      <style>{`
+        .search-rides-page {
+          padding-top: 76px;
+          min-height: 100vh;
+          background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
+        }
+
+        .search-card {
+          border: none;
+          box-shadow: var(--shadow-lg);
+          border-radius: 1rem;
+        }
+
+        .ride-card {
+          transition: all 0.3s ease;
+          border: none;
+          overflow: hidden;
+        }
+
+        .ride-card:hover {
+          transform: translateY(-8px);
+          box-shadow: var(--shadow-xl);
+        }
+
+        .route-info {
+          position: relative;
+        }
+
+        .route-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 10px;
+          flex-shrink: 0;
+        }
+
+        .route-line {
+          width: 2px;
+          height: 20px;
+          background-color: var(--border-color);
+          margin-left: 5px;
+          margin-right: 10px;
+        }
+
+        .price-display {
+          background: rgba(255, 255, 255, 0.2);
+          padding: 0.5rem 1rem;
+          border-radius: 0.5rem;
+          text-align: center;
+        }
+
+        .price-display .amount {
+          font-size: 1.25rem;
+          font-weight: 700;
+          display: block;
+        }
+
+        .price-display .currency {
+          font-size: 0.875rem;
+          opacity: 0.9;
+        }
+
+        .amenities .badge {
+          font-size: 0.75rem;
+          padding: 0.5em 0.75em;
+        }
+
+        .card-actions {
+          border-top: 1px solid var(--border-color);
+          padding-top: 1rem;
+          margin-top: auto;
+        }
+
+        .rating {
+          display: flex;
+          align-items: center;
+        }
+
+        .rating .fa-star {
+          margin-right: 0.125rem;
+        }
+
+        @media (max-width: 768px) {
+          .search-card .row > div {
+            margin-bottom: 1rem;
+          }
+
+          .route-info {
+            margin-bottom: 1rem;
+          }
+
+          .ride-details .row > div {
+            margin-bottom: 0.5rem;
+          }
+        }
+      `}</style>
     </div>
   );
 };

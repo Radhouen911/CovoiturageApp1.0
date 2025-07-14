@@ -124,11 +124,11 @@ const Register = () => {
   };
 
   return (
-    <div className="container-fluid">
-      <style jsx>{`
+    <div className="container-fluid" style={{ paddingTop: "100px" }}>
+      <style>{`
         .container-fluid {
           padding: 0 12px;
-          min-height: 100vh;
+          /* min-height: 100vh; */
           display: flex;
           justify-content: center;
           align-items: center;

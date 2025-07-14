@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import MapComponent from "../components/MapComponent"; // Import the map component
+import MapComponent from "../components/MapComponent";
 import { useAuth } from "../contexts/AuthContext";
 import ApiService from "../services/api";
 
@@ -209,7 +209,7 @@ const CreateRide = () => {
 
   return (
     <div className="container py-4">
-      <style jsx>{`
+      <style>{`
         .create-ride-card {
           border: none;
           border-radius: 15px;
@@ -306,7 +306,7 @@ const CreateRide = () => {
                       }`}
                       name="from"
                       value={rideData.from}
-                      onChange={(e) => handleChange(e)}
+                      onChange={handleChange}
                       placeholder="Ex: Tunis"
                       required
                       disabled={isSubmitting}
@@ -325,7 +325,7 @@ const CreateRide = () => {
                       }`}
                       name="to"
                       value={rideData.to}
-                      onChange={(e) => handleChange(e)}
+                      onChange={handleChange}
                       placeholder="Ex: Sousse"
                       required
                       disabled={isSubmitting}
@@ -417,7 +417,7 @@ const CreateRide = () => {
                     )}
                   </div>
 
-                  <div className="col-12 mt-4">
+                  <div className="col-md-6">
                     <label className="form-label">Places disponibles *</label>
                     <select
                       className={`form-select ${

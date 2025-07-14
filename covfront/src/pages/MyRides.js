@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import ApiService from "../services/api";
@@ -11,12 +11,11 @@ const MyRidesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    console.log("User:", user);
+    console.log("User:", user); // Debug user role
     const checkAuth = async () => {
       if (authLoading) return;
 
@@ -35,7 +34,6 @@ const MyRidesPage = () => {
           user?.role === "driver" ? loadBookingRequests() : Promise.resolve(),
           user?.role === "driver" ? loadMyRides() : Promise.resolve(),
         ]);
-        forceUpdate();
       } catch (err) {
         console.error("Auth check failed:", err);
         setError("Erreur de vérification de l'authentification");
@@ -53,7 +51,7 @@ const MyRidesPage = () => {
       const response = await ApiService.getMyBookings();
       console.log("Bookings response:", response);
       if (response.success) {
-        setBookings([...(response.data.data || [])]);
+        setBookings(response.data.data || []);
       } else {
         setError(response.message || "Erreur chargement réservations");
       }
@@ -68,25 +66,16 @@ const MyRidesPage = () => {
   const loadBookingRequests = async () => {
     try {
       setError("");
-      console.log("Fetching booking requests...");
       const response = await ApiService.getBookingRequests();
-      console.log("Full API response:", response);
-      const requests = response.data?.data || response.data || [];
-      console.log("Parsed requests:", requests);
-      setBookingRequests((prev) => {
-        const newRequests = [...requests];
-        console.log("Setting bookingRequests to:", newRequests);
-        return newRequests;
-      });
-      forceUpdate();
+      console.log("Booking requests response:", response);
+      if (response.success) {
+        setBookingRequests(response.data || []);
+      } else {
+        setError(response.message || "Erreur chargement demandes");
+      }
     } catch (error) {
-      console.error("Load booking requests error:", {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
+      console.error("Load booking requests error:", error);
       setError(error.response?.data?.message || "Erreur chargement demandes");
-      setBookingRequests([]);
     }
   };
 
@@ -97,8 +86,8 @@ const MyRidesPage = () => {
       console.log("My rides response:", response);
       if (response.success) {
         const rides = response.data.data || [];
-        console.log("Setting myRides:", rides);
-        setMyRides(rides.filter((ride) => ride && ride.id));
+        console.log("Setting myRides:", rides); // Debug
+        setMyRides(rides.filter((ride) => ride && ride.id)); // Filter out undefined/null
       } else {
         setError(response.message || "Erreur chargement trajets");
       }
@@ -167,6 +156,21 @@ const MyRidesPage = () => {
     }
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatTime = (timeString) => {
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   if (authLoading || loading) {
     return (
       <div className="container py-4 text-center">
@@ -183,7 +187,7 @@ const MyRidesPage = () => {
 
   return (
     <div className="container py-4">
-      <style jsx>{`
+      <style>{`
         .booking-card,
         .ride-card {
           border-radius: 10px;
@@ -228,18 +232,7 @@ const MyRidesPage = () => {
                           </h5>
                           <p>
                             <i className="fas fa-calendar me-2"></i>
-                            {new Date(ride.date).toLocaleDateString("fr-FR", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })}{" "}
-                            à{" "}
-                            {new Date(
-                              `2000-01-01T${ride.time}`
-                            ).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                            {formatDate(ride.date)} à {formatTime(ride.time)}
                           </p>
                           <p>
                             <i className="fas fa-car me-2"></i>
@@ -247,7 +240,7 @@ const MyRidesPage = () => {
                           </p>
                           <p>
                             <i className="fas fa-users me-2"></i>
-                            Places disponibles: {ride.available_seats}/
+                            Places disponibles: {ride.remaining_seats}/
                             {ride.total_seats}
                           </p>
                           <p>
@@ -270,54 +263,31 @@ const MyRidesPage = () => {
 
               <div className="mb-4">
                 <h3>Demandes de réservation en attente</h3>
-                <p>Nombre de demandes: {bookingRequests.length}</p>
                 {bookingRequests.length > 0 ? (
-                  bookingRequests.map((request) => (
-                    <div key={request.id} className="card booking-card">
-                      <div className="card-body">
-                        <h5>
-                          {request.ride?.from || "N/A"} →{" "}
-                          {request.ride?.to || "N/A"}
-                        </h5>
-                        <p>
-                          <i className="fas fa-calendar me-2"></i>
-                          {request.ride?.date
-                            ? new Date(request.ride.date).toLocaleDateString(
-                                "fr-FR",
-                                {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                }
-                              )
-                            : "N/A"}{" "}
-                          à{" "}
-                          {request.ride?.time
-                            ? new Date(
-                                `2000-01-01T${request.ride.time}`
-                              ).toLocaleTimeString("fr-FR", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "N/A"}
-                        </p>
-                        <p>
-                          <i className="fas fa-user me-2"></i>
-                          Passager: {request.passenger?.name || "N/A"}
-                        </p>
-                        <p>
-                          <i className="fas fa-users me-2"></i>
-                          Places demandées: {request.seats_booked || "N/A"}
-                        </p>
-                        <p>
-                          <i className="fas fa-money-bill me-2"></i>
-                          Total: {request.total_price || "N/A"} TND
-                        </p>
-                        <p>
-                          <i className="fas fa-info-circle me-2"></i>
-                          Statut: {request.status || "N/A"}
-                        </p>
-                        {request.status === "pending" && (
+                  bookingRequests.map((request) =>
+                    request.ride ? (
+                      <div key={request.id} className="card booking-card">
+                        <div className="card-body">
+                          <h5>
+                            {request.ride.from} → {request.ride.to}
+                          </h5>
+                          <p>
+                            <i className="fas fa-calendar me-2"></i>
+                            {formatDate(request.ride.date)} à{" "}
+                            {formatTime(request.ride.time)}
+                          </p>
+                          <p>
+                            <i className="fas fa-user me-2"></i>
+                            Passager: {request.passenger.name}
+                          </p>
+                          <p>
+                            <i className="fas fa-users me-2"></i>
+                            Places demandées: {request.seats_booked}
+                          </p>
+                          <p>
+                            <i className="fas fa-money-bill me-2"></i>
+                            Total: {request.total_price} TND
+                          </p>
                           <div className="d-flex gap-2">
                             <button
                               className="btn btn-success"
@@ -332,10 +302,10 @@ const MyRidesPage = () => {
                               Rejeter
                             </button>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ) : null
+                  )
                 ) : (
                   <p className="text-muted">
                     Aucune demande de réservation en attente.
@@ -345,72 +315,50 @@ const MyRidesPage = () => {
 
               <div className="mb-4">
                 <h3>Historique des demandes de réservation</h3>
-                {myRides.flatMap((ride) =>
-                  (ride.bookings || []).filter(
-                    (booking) => booking.status !== "pending"
-                  )
-                ).length > 0 ? (
+                {myRides.flatMap((ride) => ride.bookings || []).length > 0 ? (
                   myRides
-                    .flatMap((ride) =>
-                      (ride.bookings || []).filter(
-                        (booking) => booking.status !== "pending"
-                      )
-                    )
-                    .map((request) => (
-                      <div key={request.id} className="card booking-card">
-                        <div className="card-body">
-                          <h5>
-                            {request.ride?.from || "N/A"} →{" "}
-                            {request.ride?.to || "N/A"}
-                          </h5>
-                          <p>
-                            <i className="fas fa-calendar me-2"></i>
-                            {request.ride?.date
-                              ? new Date(request.ride.date).toLocaleDateString(
-                                  "fr-FR",
-                                  {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                  }
-                                )
-                              : "N/A"}{" "}
-                            à{" "}
-                            {request.ride?.time
-                              ? new Date(
-                                  `2000-01-01T${request.ride.time}`
-                                ).toLocaleTimeString("fr-FR", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })
-                              : "N/A"}
-                          </p>
-                          <p>
-                            <i className="fas fa-user me-2"></i>
-                            Passager: {request.passenger?.name || "N/A"}
-                          </p>
-                          <p>
-                            <i className="fas fa-users me-2"></i>
-                            Places demandées: {request.seats_booked || "N/A"}
-                          </p>
-                          <p>
-                            <i className="fas fa-money-bill me-2"></i>
-                            Total: {request.total_price || "N/A"} TND
-                          </p>
-                          <p>
-                            <i className="fas fa-info-circle me-2"></i>
-                            Statut:{" "}
-                            {request.status === "confirmed"
-                              ? "Acceptée"
-                              : request.status === "rejected"
-                              ? "Rejetée"
-                              : request.status === "cancelled"
-                              ? "Annulée"
-                              : request.status || "N/A"}
-                          </p>
+                    .flatMap((ride) => ride.bookings || [])
+                    .map((request) =>
+                      request.ride ? (
+                        <div key={request.id} className="card booking-card">
+                          <div className="card-body">
+                            <h5>
+                              {request.ride.from} → {request.ride.to}
+                            </h5>
+                            <p>
+                              <i className="fas fa-calendar me-2"></i>
+                              {formatDate(request.ride.date)} à{" "}
+                              {formatTime(request.ride.time)}
+                            </p>
+                            <p>
+                              <i className="fas fa-user me-2"></i>
+                              Passager: {request.passenger.name}
+                            </p>
+                            <p>
+                              <i className="fas fa-users me-2"></i>
+                              Places demandées: {request.seats_booked}
+                            </p>
+                            <p>
+                              <i className="fas fa-money-bill me-2"></i>
+                              Total: {request.total_price} TND
+                            </p>
+                            <p>
+                              <i className="fas fa-info-circle me-2"></i>
+                              Statut:{" "}
+                              {request.status === "pending"
+                                ? "En attente"
+                                : request.status === "confirmed"
+                                ? "Acceptée"
+                                : request.status === "rejected"
+                                ? "Rejetée"
+                                : request.status === "cancelled"
+                                ? "Annulée"
+                                : request.status}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ) : null
+                    )
                 ) : (
                   <p className="text-muted">Aucun historique de demandes.</p>
                 )}
@@ -421,66 +369,54 @@ const MyRidesPage = () => {
           <div className="mb-4">
             <h3>Mes réservations</h3>
             {bookings.length > 0 ? (
-              bookings.map((booking) => (
-                <div key={booking.id} className="card booking-card">
-                  <div className="card-body">
-                    <h5>
-                      {booking.ride?.from || "N/A"} →{" "}
-                      {booking.ride?.to || "N/A"}
-                    </h5>
-                    <p>
-                      <i className="fas fa-calendar me-2"></i>
-                      {booking.ride?.date
-                        ? new Date(booking.ride.date).toLocaleDateString(
-                            "fr-FR",
-                            { year: "numeric", month: "long", day: "numeric" }
-                          )
-                        : "N/A"}{" "}
-                      à{" "}
-                      {booking.ride?.time
-                        ? new Date(
-                            `2000-01-01T${booking.ride.time}`
-                          ).toLocaleTimeString("fr-FR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "N/A"}
-                    </p>
-                    <p>
-                      <i className="fas fa-user me-2"></i>
-                      Conducteur: {booking.ride?.driver?.name || "N/A"}
-                    </p>
-                    <p>
-                      <i className="fas fa-users me-2"></i>
-                      Places réservées: {booking.seats_booked || "N/A"}
-                    </p>
-                    <p>
-                      <i className="fas fa-money-bill me-2"></i>
-                      Total: {booking.total_price || "N/A"} TND
-                    </p>
-                    <p>
-                      <i className="fas fa-info-circle me-2"></i>
-                      Statut:{" "}
-                      {booking.status === "pending"
-                        ? "En attente"
-                        : booking.status === "confirmed"
-                        ? "Confirmée"
-                        : booking.status === "cancelled"
-                        ? "Annulée"
-                        : booking.status || "N/A"}
-                    </p>
-                    {booking.status === "pending" &&
-                      user?.role === "passenger" && (
-                        <button
-                          className="btn btn-outline-danger"
-                          onClick={() => handleCancel(booking.id)}
-                        >
-                          Annuler
-                        </button>
-                      )}
+              bookings.map((booking) =>
+                booking.ride ? (
+                  <div key={booking.id} className="card booking-card">
+                    <div className="card-body">
+                      <h5>
+                        {booking.ride.from} → {booking.ride.to}
+                      </h5>
+                      <p>
+                        <i className="fas fa-calendar me-2"></i>
+                        {formatDate(booking.ride.date)} à{" "}
+                        {formatTime(booking.ride.time)}
+                      </p>
+                      <p>
+                        <i className="fas fa-user me-2"></i>
+                        Conducteur: {booking.ride.driver.name}
+                      </p>
+                      <p>
+                        <i className="fas fa-users me-2"></i>
+                        Places réservées: {booking.seats_booked}
+                      </p>
+                      <p>
+                        <i className="fas fa-money-bill me-2"></i>
+                        Total: {booking.total_price} TND
+                      </p>
+                      <p>
+                        <i className="fas fa-info-circle me-2"></i>
+                        Statut:{" "}
+                        {booking.status === "pending"
+                          ? "En attente"
+                          : booking.status === "confirmed"
+                          ? "Confirmée"
+                          : booking.status === "cancelled"
+                          ? "Annulée"
+                          : booking.status}
+                      </p>
+                      {booking.status === "pending" &&
+                        user?.role === "passenger" && (
+                          <button
+                            className="btn btn-outline-danger"
+                            onClick={() => handleCancel(booking.id)}
+                          >
+                            Annuler
+                          </button>
+                        )}
+                    </div>
                   </div>
-                </div>
-              ))
+                ) : null
+              )
             ) : (
               <p className="text-muted">Aucune réservation trouvée.</p>
             )}

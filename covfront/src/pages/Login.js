@@ -114,16 +114,13 @@ const Login = () => {
   };
 
   return (
-    <div
-      className="container-fluid min-vh-100 py-5"
-      style={{ paddingTop: "80px" }}
-    >
-      <style jsx>{`
+    <div className="container-fluid min-vh-100 py-5 page-container">
+      <style>{`
         .login-container {
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: calc(100vh - 80px);
+          /* min-height: calc(100vh - 80px); */
         }
         .welcome-text {
           flex: 1;

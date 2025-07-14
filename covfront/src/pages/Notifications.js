@@ -102,7 +102,7 @@ const Notifications = () => {
 
   return (
     <div className="container py-4">
-      <style jsx>{`
+      <style>{`
         .notification-card {
           border: none;
           border-radius: 15px;

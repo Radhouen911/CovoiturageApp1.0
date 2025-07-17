@@ -4,41 +4,44 @@ import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
 
 import Footer from "./components/Footer";
-import Navbar from "./components/Header";
+import Header from "./components/Header";
+import TicketDetail from "./components/TicketDetail";
 import { AuthProvider } from "./contexts/AuthContext";
+import AdminDashboard from "./pages/AdminDashboard";
+import APropos from "./pages/APropos";
+import Carrieres from "./pages/Carrieres";
+import CentreAide from "./pages/CentreAide";
+import Contact from "./pages/Contact";
+import Cookies from "./pages/Cookies";
 import CreateRide from "./pages/CreateRide";
+import CreateTicket from "./pages/CreateTicket"; // New import
+import Entreprise from "./pages/Entreprise";
+import Equipe from "./pages/Equipe";
 import Home from "./pages/Home";
+import Legal from "./pages/Legal";
 import Login from "./pages/Login";
+import MentionsLegales from "./pages/MentionsLegales";
 import Messages from "./pages/Messages";
 import MyRides from "./pages/MyRides";
+import Notifications from "./pages/Notifications";
+import Postuler from "./pages/Postuler";
+import Presse from "./pages/Presse";
+import Privacy from "./pages/Privacy";
 import Profile from "./pages/ProfilePage";
 import Register from "./pages/Register";
 import RideDetails from "./pages/RideDetails";
 import SearchRides from "./pages/SearchRides";
-import Notifications from "./pages/Notifications";
-import Entreprise from './pages/Entreprise';
-import APropos from './pages/APropos';
-import Equipe from './pages/Equipe';
-import Carrieres from './pages/Carrieres';
-import Presse from './pages/Presse';
-import Postuler from './pages/Postuler';
-import Support from './pages/Support';
-import CentreAide from './pages/CentreAide';
-import Contact from './pages/Contact';
-import Securite from './pages/Securite';
-import SignalerProbleme from './pages/SignalerProbleme';
-import Legal from './pages/Legal';
-import Terms from './pages/Terms';
-import Privacy from './pages/Privacy';
-import Cookies from './pages/Cookies';
-import MentionsLegales from './pages/MentionsLegales';
+import Securite from "./pages/Securite";
+import SignalerProbleme from "./pages/SignalerProbleme";
+import Support from "./pages/Support";
+import Terms from "./pages/Terms";
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <div className="App">
-          <Navbar />
+          <Header />
           <main className="main-content">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -69,6 +72,10 @@ function App() {
               <Route path="/cookies" element={<Cookies />} />
               <Route path="/mentions" element={<MentionsLegales />} />
               <Route path="/legal-notice" element={<MentionsLegales />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/create-ticket" element={<CreateTicket />} />{" "}
+              <Route path="/admin/tickets/:id" element={<TicketDetail />} />{" "}
+              {/* New route */}
             </Routes>
           </main>
           <Footer />

@@ -23,11 +23,9 @@ export const AuthProvider = ({ children }) => {
 
       if (token && userData) {
         try {
-          // Set initial state from storage
           setIsLoggedIn(true);
-          setUser(JSON.parse(userData));
+          setUser(JSON.parse(userData)); // Set initial user from storage
 
-          // Validate token with server
           const response = await ApiService.getCurrentUser();
           if (response.success) {
             setUser(response.data);
@@ -54,6 +52,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await ApiService.login(credentials);
       if (response.success) {
+        localStorage.setItem("token", response.data.token); // Save token
+        localStorage.setItem("user", JSON.stringify(response.data.user)); // Save user
         setIsLoggedIn(true);
         setUser(response.data.user);
       }
@@ -68,6 +68,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await ApiService.register(userData);
       if (response.success) {
+        localStorage.setItem("token", response.data.token); // Save token
+        localStorage.setItem("user", JSON.stringify(response.data.user)); // Save user
         setIsLoggedIn(true);
         setUser(response.data.user);
       }

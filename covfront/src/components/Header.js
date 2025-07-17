@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { FaUser, FaBell, FaSignOutAlt, FaCog, FaHome, FaSearch, FaCar, FaComments, FaUserFriends } from 'react-icons/fa';
+import { useEffect, useState } from "react";
+import {
+  FaBell,
+  FaCar,
+  FaCog,
+  FaComments,
+  FaHome,
+  FaSearch,
+  FaSignOutAlt,
+  FaUser,
+  FaUserFriends,
+} from "react-icons/fa";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -18,8 +28,8 @@ const Header = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -30,23 +40,26 @@ const Header = () => {
 
   const fetchUnreadNotifications = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+      const response = await fetch(
+        `${API_BASE_URL}/api/notifications/unread-count`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
         }
-      });
+      );
       if (response.ok) {
         const data = await response.json();
         setUnreadNotifications(data.count || 0);
       }
     } catch (error) {
-      console.error('Error fetching unread notifications:', error);
+      console.error("Error fetching unread notifications:", error);
     }
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
     setShowDropdown(false);
   };
 
@@ -55,15 +68,19 @@ const Header = () => {
   };
 
   const navItems = [
-    { path: '/', label: 'Accueil', icon: <FaHome /> },
-    { path: '/search-rides', label: 'Rechercher', icon: <FaSearch /> },
-    { path: '/my-rides', label: 'Trajets', icon: <FaCar /> },
-    { path: '/messages', label: 'Messages', icon: <FaComments /> },
-    { path: '/profile', label: 'Profil', icon: <FaUserFriends /> }
+    { path: "/", label: "Accueil", icon: <FaHome /> },
+    { path: "/search-rides", label: "Rechercher", icon: <FaSearch /> },
+    { path: "/my-rides", label: "Trajets", icon: <FaCar /> },
+    { path: "/messages", label: "Messages", icon: <FaComments /> },
+    { path: "/profile", label: "Profil", icon: <FaUserFriends /> },
   ];
 
   return (
-    <nav className={`navbar navbar-expand-lg fixed-top ${isScrolled ? 'scrolled' : ''}`}>
+    <nav
+      className={`navbar navbar-expand-lg fixed-top ${
+        isScrolled ? "scrolled" : ""
+      }`}
+    >
       <div className="container">
         {/* Logo */}
         <Link className="navbar-brand gradient-text" to="/">
@@ -90,7 +107,7 @@ const Header = () => {
             {navItems.map((item) => (
               <li className="nav-item" key={item.path}>
                 <Link
-                  className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
+                  className={`nav-link ${isActive(item.path) ? "active" : ""}`}
                   to={item.path}
                 >
                   <span className="nav-icon">{item.icon}</span>
@@ -113,7 +130,7 @@ const Header = () => {
                   <FaBell className="fs-5" />
                   {unreadNotifications > 0 && (
                     <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      {unreadNotifications > 99 ? "99+" : unreadNotifications}
                     </span>
                   )}
                 </Link>
@@ -139,15 +156,20 @@ const Header = () => {
                       />
                     ) : (
                       <div className="avatar-placeholder">
-                        {user.name?.charAt(0).toUpperCase() || 'U'}
+                        {user.name?.charAt(0).toUpperCase() || "U"}
                       </div>
                     )}
                   </div>
-                  <span className="user-name d-none d-md-inline">{user.name}</span>
+                  <span className="user-name d-none d-md-inline">
+                    {user.name}
+                  </span>
                 </button>
 
                 {showDropdown && (
-                  <div className="dropdown-menu show" aria-labelledby="userDropdown">
+                  <div
+                    className="dropdown-menu show"
+                    aria-labelledby="userDropdown"
+                  >
                     <div className="dropdown-header">
                       <div className="d-flex align-items-center">
                         <div className="user-avatar me-3">
@@ -161,7 +183,7 @@ const Header = () => {
                             />
                           ) : (
                             <div className="avatar-placeholder large">
-                              {user.name?.charAt(0).toUpperCase() || 'U'}
+                              {user.name?.charAt(0).toUpperCase() || "U"}
                             </div>
                           )}
                         </div>
@@ -176,12 +198,27 @@ const Header = () => {
                       <FaUser className="me-2" />
                       Mon Profil
                     </Link>
+                    {user?.role === "admin" && (
+                      <Link className="dropdown-item" to="/admin">
+                        <FaUser className="me-2" />
+                        Admin Menu
+                      </Link>
+                    )}
+                    {user?.role !== "admin" && (
+                      <Link className="dropdown-item" to="/create-ticket">
+                        <FaUser className="me-2" />
+                        File a Complaint
+                      </Link>
+                    )}
                     <Link className="dropdown-item" to="/settings">
                       <FaCog className="me-2" />
                       Paramètres
                     </Link>
                     <div className="dropdown-divider"></div>
-                    <button className="dropdown-item text-danger" onClick={handleLogout}>
+                    <button
+                      className="dropdown-item text-danger"
+                      onClick={handleLogout}
+                    >
                       <FaSignOutAlt className="me-2" />
                       Se déconnecter
                     </button>

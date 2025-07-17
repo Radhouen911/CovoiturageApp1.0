@@ -11,7 +11,7 @@ use App\Http\Controllers\Api\SSEController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\NotificationController;
-
+use App\Http\Controllers\Api\TicketController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -85,4 +85,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // SSE for real-time messaging
     Route::get('/sse/conversations/{conversationId}', [SSEController::class, 'stream']);
+
+    // Ticket routes
+    Route::get('/tickets', [TicketController::class, 'index']);
+    Route::post('/tickets', [TicketController::class, 'store']);
+    Route::put('/tickets/{id}', [TicketController::class, 'update']);
 });

@@ -20,7 +20,7 @@ const RideDetails = () => {
     expiry: "",
     cvc: "",
   });
-  const [paymentStatus, setPaymentStatus] = useState("pending");
+  const [mockPaymentMethodId, setMockPaymentMethodId] = useState(null);
 
   const loadRideDetails = useCallback(async () => {
     try {
@@ -57,15 +57,20 @@ const RideDetails = () => {
   };
 
   const simulatePayment = () => {
-    // Simulate payment based on card number (e.g., 4242-4242-4242-4242 for success)
-    const isValidTestCard =
-      cardDetails.number.replace(/\D/g, "") === "4242424242424242";
-    if (!isValidTestCard || !cardDetails.expiry || !cardDetails.cvc) {
-      setPaymentStatus("failed");
-      return false;
+    console.log("Simulating payment with card details:", cardDetails);
+    const cleanNumber = cardDetails.number.replace(/\D/g, "");
+    if (!cleanNumber) {
+      console.log("Validation failed: Card number is required");
+      return null;
     }
-    setPaymentStatus("succeeded");
-    return true;
+    if (!cardDetails.expiry || !cardDetails.cvc) {
+      console.log("Validation failed: Expiry and CVC are required");
+      return null;
+    }
+
+    const mockId = `pm_${cleanNumber.slice(-4)}_${Date.now()}`;
+    console.log("Payment simulated with mock payment method ID:", mockId);
+    return mockId;
   };
 
   const handleBooking = async () => {
@@ -73,36 +78,63 @@ const RideDetails = () => {
       navigate("/login");
       return;
     }
+
     if (user?.role !== "passenger") {
       setBookingError("Seuls les passengers peuvent réserver des trajets");
       return;
     }
+
     if (user?.id === ride?.driver?.id) {
       setBookingError("Vous ne pouvez pas réserver votre propre trajet");
       return;
     }
+
+    if (bookingData.seats_booked > ride.remaining_seats) {
+      setBookingError(
+        "Nombre de places demandé dépasse les places disponibles"
+      );
+      return;
+    }
+
     setBookingLoading(true);
     setBookingError("");
+
     try {
-      if (!simulatePayment()) {
+      console.log("Starting booking process with:", {
+        bookingData,
+        cardDetails,
+      });
+
+      const paymentMethodId = simulatePayment();
+      if (!paymentMethodId) {
         setBookingError(
-          "Le paiement a échoué. Utilisez 4242-4242-4242-4242 pour un test réussi."
+          "Le paiement a échoué. Remplissez les champs de la carte."
         );
         return;
       }
 
       const intent = await ApiService.createPaymentIntent(id);
+      console.log("Payment Intent:", intent);
+
       const confirmation = await ApiService.confirmPayment({
         payment_intent_id: intent.data.id,
-        amount: bookingData.seats_booked * ride.price * 100, // Convert to cents
+        amount: bookingData.seats_booked * ride.price * 100,
       });
+      console.log("Payment Confirmation:", confirmation);
+
       if (confirmation.data.status !== "succeeded") {
         setBookingError("Échec de la confirmation du paiement");
         return;
       }
 
-      const response = await ApiService.bookRide(id, bookingData);
-      console.log("API Response:", response);
+      const bookingPayload = {
+        ...bookingData,
+        payment_method_id: paymentMethodId, // now it's guaranteed to exist
+      };
+
+      const response = await ApiService.bookRide(id, bookingPayload);
+      console.log("Booking Response:", response);
+
       if (response.success) {
         setShowBookingModal(false);
         navigate("/profilePage", {
@@ -115,8 +147,13 @@ const RideDetails = () => {
         setBookingError(response.message || "Erreur lors de la réservation");
       }
     } catch (error) {
-      console.error("Erreur réservation:", error);
-      setBookingError(error.response?.data?.message || "Erreur réservation");
+      console.error(
+        "Erreur réservation:",
+        error.response?.data || error.message
+      );
+      setBookingError(
+        error.response?.data?.message || "Erreur lors de la réservation"
+      );
     } finally {
       setBookingLoading(false);
     }
@@ -528,10 +565,9 @@ const RideDetails = () => {
                     onChange={(e) => handleCardChange("cvc", e.target.value)}
                   />
                   <small className="text-muted">
-                    Utilisez 4242-4242-4242-4242 avec une date future et un CVC
-                    valide pour un paiement réussi (simulation).
+                    Utilisez n'importe quel numéro, date future (MM/YY), et CVC
+                    de 3 chiffres pour la simulation.
                   </small>
-                  <p>Statut: {paymentStatus}</p>
                 </div>
               </div>
               <div className="modal-footer">

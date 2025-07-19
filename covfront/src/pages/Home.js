@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useEffect, useState } from "react";
 import {
   FaCar,
-  FaUsers,
-  FaMapMarkedAlt,
-  FaShieldAlt,
   FaClock,
-  FaStar,
-  FaSearch,
-  FaPlus,
   FaComments,
-  FaMoon,
-  FaSun,
-} from 'react-icons/fa';
-import heroImage from '../assets/images/1.jpg';
-import blablacarDaily from '../assets/images/finger.png';
+  FaMapMarkedAlt,
+  FaPlus,
+  FaSearch,
+  FaShieldAlt,
+  FaStar,
+  FaUsers,
+} from "react-icons/fa";
+import { Link } from "react-router-dom";
+import heroImage from "../assets/images/1.jpg";
+import blablacarDaily from "../assets/images/finger.png";
+import { useAuth } from "../contexts/AuthContext";
 
 // API URL could come from env variable for flexibility
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -27,8 +25,8 @@ const Home = () => {
     totalUsers: 0,
     totalTrips: 0,
   });
-  const [darkMode, setDarkMode] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchStats();
@@ -42,108 +40,117 @@ const Home = () => {
         setStats(data);
       }
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
     }
   };
-
-  const toggleDarkMode = () => setDarkMode(!darkMode);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     // Redirect to search page with query
-    if(searchQuery.trim()) {
-      window.location.href = `/search-rides?q=${encodeURIComponent(searchQuery.trim())}`;
+    if (searchQuery.trim()) {
+      window.location.href = `/search-rides?q=${encodeURIComponent(
+        searchQuery.trim()
+      )}`;
     }
   };
 
   const features = [
     {
       icon: <FaCar aria-hidden="true" />,
-      title: 'Trajets Sécurisés',
-      description: 'Voyagez en toute sécurité avec des conducteurs vérifiés et des passagers de confiance.',
+      title: "Trajets Sécurisés",
+      description:
+        "Voyagez en toute sécurité avec des conducteurs vérifiés et des passagers de confiance.",
     },
     {
       icon: <FaUsers aria-hidden="true" />,
-      title: 'Communauté Active',
-      description: 'Rejoignez une communauté de voyageurs passionnés et partagez vos trajets.',
+      title: "Communauté Active",
+      description:
+        "Rejoignez une communauté de voyageurs passionnés et partagez vos trajets.",
     },
     {
       icon: <FaMapMarkedAlt aria-hidden="true" />,
-      title: 'Itinéraires Optimisés',
-      description: "Trouvez les meilleurs itinéraires et économisez du temps et de l'argent.",
+      title: "Itinéraires Optimisés",
+      description:
+        "Trouvez les meilleurs itinéraires et économisez du temps et de l'argent.",
     },
     {
       icon: <FaShieldAlt aria-hidden="true" />,
-      title: 'Paiements Sécurisés',
-      description: 'Paiements en ligne sécurisés et transparents pour tous vos trajets.',
+      title: "Paiements Sécurisés",
+      description:
+        "Paiements en ligne sécurisés et transparents pour tous vos trajets.",
     },
     {
       icon: <FaClock aria-hidden="true" />,
-      title: 'Flexibilité Totale',
-      description: "Planifiez vos trajets à l'avance ou trouvez des covoiturages de dernière minute.",
+      title: "Flexibilité Totale",
+      description:
+        "Planifiez vos trajets à l'avance ou trouvez des covoiturages de dernière minute.",
     },
     {
       icon: <FaStar aria-hidden="true" />,
-      title: 'Système de Notation',
-      description: 'Évaluez et soyez évalué pour maintenir une communauté de qualité.',
+      title: "Système de Notation",
+      description:
+        "Évaluez et soyez évalué pour maintenir une communauté de qualité.",
     },
   ];
 
   const quickActions = [
     {
       icon: <FaSearch aria-hidden="true" />,
-      title: 'Rechercher un trajet',
-      description: 'Trouvez des covoiturages disponibles',
-      link: '/search-rides',
-      color: 'primary',
+      title: "Rechercher un trajet",
+      description: "Trouvez des covoiturages disponibles",
+      link: "/search-rides",
+      color: "primary",
     },
     {
       icon: <FaPlus aria-hidden="true" />,
-      title: 'Publier un trajet',
-      description: 'Proposez vos places disponibles',
-      link: '/create-ride',
-      color: 'success',
+      title: "Publier un trajet",
+      description: "Proposez vos places disponibles",
+      link: "/create-ride",
+      color: "success",
     },
     {
       icon: <FaComments aria-hidden="true" />,
-      title: 'Messages',
-      description: 'Communiquez avec les autres utilisateurs',
-      link: '/messages',
-      color: 'info',
+      title: "Messages",
+      description: "Communiquez avec les autres utilisateurs",
+      link: "/messages",
+      color: "info",
     },
   ];
 
   return (
     <>
-      <div className={`home-page ${darkMode ? 'dark-mode' : ''}`}>
-        {/* Dark mode toggle */}
-        <button
-          aria-label={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
-          onClick={toggleDarkMode}
-          className="dark-mode-toggle btn btn-link position-fixed top-3 end-3"
-          title="Changer le thème"
-        >
-          {darkMode ? <FaSun size={24} /> : <FaMoon size={24} />}
-        </button>
-
+      <div className={`home-page}`}>
         {/* Hero Section */}
         <section className="hero-section">
           <div className="hero-background" aria-hidden="true" />
           <div className="hero-overlay" aria-hidden="true" />
-          <div className="container" style={{ position: 'relative', zIndex: 2 }}>
-            <div className="row align-items-center min-vh-100" style={{ marginTop: '76px' }}>
+          <div
+            className="container"
+            style={{ position: "relative", zIndex: 2 }}
+          >
+            <div
+              className="row align-items-center min-vh-100"
+              style={{ marginTop: "76px" }}
+            >
               <div className="col-lg-6 fade-in">
                 <h1 className="display-4 fw-bold text-white mb-4">
                   Vos destinations,
-                  <br />nos solutions.
+                  <br />
+                  nos solutions.
                 </h1>
                 <p className="lead text-white-50 mb-5">
                   Rejoignez la communauté de covoiturage la plus dynamique.
-                  Partagez vos trajets, faites des économies et rencontrez de nouvelles personnes.
+                  Partagez vos trajets, faites des économies et rencontrez de
+                  nouvelles personnes.
                 </p>
 
                 {/* Search Bar */}
-                <form onSubmit={handleSearchSubmit} className="mb-4" role="search" aria-label="Recherche de trajets">
+                <form
+                  onSubmit={handleSearchSubmit}
+                  className="mb-4"
+                  role="search"
+                  aria-label="Recherche de trajets"
+                >
                   <div className="input-group input-group-lg">
                     <input
                       type="search"
@@ -153,7 +160,11 @@ const Home = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    <button className="btn btn-primary" type="submit" aria-label="Lancer la recherche">
+                    <button
+                      className="btn btn-primary"
+                      type="submit"
+                      aria-label="Lancer la recherche"
+                    >
                       <FaSearch />
                     </button>
                   </div>
@@ -162,21 +173,37 @@ const Home = () => {
                 <div className="hero-buttons">
                   {user ? (
                     <div className="d-flex gap-3 flex-wrap">
-                      <Link to="/search-rides" className="btn btn-primary btn-lg" aria-label="Rechercher un trajet">
+                      <Link
+                        to="/search-rides"
+                        className="btn btn-primary btn-lg"
+                        aria-label="Rechercher un trajet"
+                      >
                         <FaSearch className="me-2" />
                         Rechercher un trajet
                       </Link>
-                      <Link to="/create-ride" className="btn btn-outline-light btn-lg" aria-label="Publier un trajet">
+                      <Link
+                        to="/create-ride"
+                        className="btn btn-outline-light btn-lg"
+                        aria-label="Publier un trajet"
+                      >
                         <FaPlus className="me-2" />
                         Publier un trajet
                       </Link>
                     </div>
                   ) : (
                     <div className="d-flex gap-3 flex-wrap">
-                      <Link to="/register" className="btn btn-primary btn-lg" aria-label="Créer un compte">
+                      <Link
+                        to="/register"
+                        className="btn btn-primary btn-lg"
+                        aria-label="Créer un compte"
+                      >
                         Commencer maintenant
                       </Link>
-                      <Link to="/login" className="btn btn-outline-light btn-lg" aria-label="Se connecter">
+                      <Link
+                        to="/login"
+                        className="btn btn-outline-light btn-lg"
+                        aria-label="Se connecter"
+                      >
                         Se connecter
                       </Link>
                     </div>
@@ -186,21 +213,33 @@ const Home = () => {
 
               <div className="col-lg-6 slide-in hero-image" aria-hidden="true">
                 {/* Floating cards with improved symmetry */}
-                <div className="floating-card card-1" tabIndex={0} title="Nombre de trajets disponibles">
+                <div
+                  className="floating-card card-1"
+                  tabIndex={0}
+                  title="Nombre de trajets disponibles"
+                >
                   <div className="card-body text-center">
                     <FaCar className="text-primary mb-2" size={24} />
                     <h6 className="mb-0">Trajets disponibles</h6>
                     <span className="text-muted">{stats.totalRides}+</span>
                   </div>
                 </div>
-                <div className="floating-card card-2" tabIndex={0} title="Nombre d'utilisateurs actifs">
+                <div
+                  className="floating-card card-2"
+                  tabIndex={0}
+                  title="Nombre d'utilisateurs actifs"
+                >
                   <div className="card-body text-center">
                     <FaUsers className="text-success mb-2" size={24} />
                     <h6 className="mb-0">Utilisateurs actifs</h6>
                     <span className="text-muted">{stats.totalUsers}+</span>
                   </div>
                 </div>
-                <div className="floating-card card-3" tabIndex={0} title="Nombre total de trajets effectués">
+                <div
+                  className="floating-card card-3"
+                  tabIndex={0}
+                  title="Nombre total de trajets effectués"
+                >
                   <div className="card-body text-center">
                     <FaMapMarkedAlt className="text-warning mb-2" size={24} />
                     <h6 className="mb-0">Trajets effectués</h6>
@@ -218,14 +257,23 @@ const Home = () => {
             <div className="row align-items-center">
               <div className="col-lg-6 col-md-7">
                 <h2 className="display-5 fw-bold mb-4 gradient-text">
-                  Découvrez CovoiturageApp,<br />
+                  Découvrez CovoiturageApp,
+                  <br />
                   l'application de covoiturage quotidien
                 </h2>
                 <p className="lead text-secondary mb-4">
-                  Vous vous rendez au travail, à la salle de sport ou à l'école ?<br />
-                  Économisez encore plus en covoiturant avec CovoiturageApp, notre application pour tous vos trajets courts du quotidien. Profitez de nombreux avantages, avec des gains sur chacun de vos trajets et des prix réduits pour les passagers.
+                  Vous vous rendez au travail, à la salle de sport ou à l'école
+                  ?<br />
+                  Économisez encore plus en covoiturant avec CovoiturageApp,
+                  notre application pour tous vos trajets courts du quotidien.
+                  Profitez de nombreux avantages, avec des gains sur chacun de
+                  vos trajets et des prix réduits pour les passagers.
                 </p>
-                <a href="#" className="btn btn-gradient btn-lg px-4 rounded-pill fw-semibold" aria-label="Découvrir CovoiturageApp Daily">
+                <a
+                  href="#"
+                  className="btn btn-gradient btn-lg px-4 rounded-pill fw-semibold"
+                  aria-label="Découvrir CovoiturageApp Daily"
+                >
                   Découvrez CovoiturageApp
                 </a>
               </div>
@@ -235,7 +283,7 @@ const Home = () => {
                   alt="CovoiturageApp Daily"
                   className="img-fluid"
                   loading="lazy"
-                  style={{ maxHeight: '320px', width: 'auto' }}
+                  style={{ maxHeight: "320px", width: "auto" }}
                 />
               </div>
             </div>
@@ -248,18 +296,33 @@ const Home = () => {
             <div className="row">
               <div className="col-12 text-center mb-5">
                 <h2 className="gradient-text mb-3">Actions Rapides</h2>
-                <p className="text-muted">Accédez rapidement aux fonctionnalités principales</p>
+                <p className="text-muted">
+                  Accédez rapidement aux fonctionnalités principales
+                </p>
               </div>
             </div>
             <div className="row justify-content-center g-4">
               {quickActions.map((action, index) => (
                 <div className="col-lg-4 col-md-6" key={index}>
-                  <Link to={action.link} className="text-decoration-none" tabIndex={0} aria-label={action.title}>
-                    <div className="card quick-action-card h-100 shadow-hover" role="button" tabIndex={0}>
+                  <Link
+                    to={action.link}
+                    className="text-decoration-none"
+                    tabIndex={0}
+                    aria-label={action.title}
+                  >
+                    <div
+                      className="card quick-action-card h-100 shadow-hover"
+                      role="button"
+                      tabIndex={0}
+                    >
                       <div className="card-body text-center p-4">
-                        <div className={`action-icon bg-${action.color} mb-3`}>{action.icon}</div>
+                        <div className={`action-icon bg-${action.color} mb-3`}>
+                          {action.icon}
+                        </div>
                         <h5 className="card-title">{action.title}</h5>
-                        <p className="card-text text-muted">{action.description}</p>
+                        <p className="card-text text-muted">
+                          {action.description}
+                        </p>
                       </div>
                     </div>
                   </Link>
@@ -274,18 +337,28 @@ const Home = () => {
           <div className="container">
             <div className="row">
               <div className="col-12 text-center mb-5">
-                <h2 className="gradient-text mb-3">Pourquoi choisir CovoiturageApp ?</h2>
-                <p className="text-muted">Découvrez les avantages de notre plateforme</p>
+                <h2 className="gradient-text mb-3">
+                  Pourquoi choisir CovoiturageApp ?
+                </h2>
+                <p className="text-muted">
+                  Découvrez les avantages de notre plateforme
+                </p>
               </div>
             </div>
             <div className="row justify-content-center g-4">
               {features.map((feature, index) => (
                 <div className="col-lg-4 col-md-6" key={index}>
-                  <div className="feature-card card h-100 border-0 shadow-hover" tabIndex={0} aria-label={feature.title}>
+                  <div
+                    className="feature-card card h-100 border-0 shadow-hover"
+                    tabIndex={0}
+                    aria-label={feature.title}
+                  >
                     <div className="card-body text-center p-4">
                       <div className="feature-icon mb-3">{feature.icon}</div>
                       <h5 className="card-title">{feature.title}</h5>
-                      <p className="card-text text-muted">{feature.description}</p>
+                      <p className="card-text text-muted">
+                        {feature.description}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -299,20 +372,38 @@ const Home = () => {
           <div className="container">
             <div className="row justify-content-center text-center">
               <div className="col-lg-4 col-md-4 mb-4">
-                <div className="stat-item" tabIndex={0} title="Nombre de trajets disponibles">
-                  <h2 className="display-4 fw-bold mb-2">{stats.totalRides}+</h2>
+                <div
+                  className="stat-item"
+                  tabIndex={0}
+                  title="Nombre de trajets disponibles"
+                >
+                  <h2 className="display-4 fw-bold mb-2">
+                    {stats.totalRides}+
+                  </h2>
                   <p className="mb-0">Trajets disponibles</p>
                 </div>
               </div>
               <div className="col-lg-4 col-md-4 mb-4">
-                <div className="stat-item" tabIndex={0} title="Nombre d'utilisateurs actifs">
-                  <h2 className="display-4 fw-bold mb-2">{stats.totalUsers}+</h2>
+                <div
+                  className="stat-item"
+                  tabIndex={0}
+                  title="Nombre d'utilisateurs actifs"
+                >
+                  <h2 className="display-4 fw-bold mb-2">
+                    {stats.totalUsers}+
+                  </h2>
                   <p className="mb-0">Utilisateurs actifs</p>
                 </div>
               </div>
               <div className="col-lg-4 col-md-4 mb-4">
-                <div className="stat-item" tabIndex={0} title="Nombre total de trajets effectués">
-                  <h2 className="display-4 fw-bold mb-2">{stats.totalTrips}+</h2>
+                <div
+                  className="stat-item"
+                  tabIndex={0}
+                  title="Nombre total de trajets effectués"
+                >
+                  <h2 className="display-4 fw-bold mb-2">
+                    {stats.totalTrips}+
+                  </h2>
                   <p className="mb-0">Trajets effectués</p>
                 </div>
               </div>
@@ -325,7 +416,9 @@ const Home = () => {
           <div className="container">
             <div className="row text-center mb-5">
               <div className="col-12">
-                <h2 className="gradient-text">Ce que disent nos utilisateurs</h2>
+                <h2 className="gradient-text">
+                  Ce que disent nos utilisateurs
+                </h2>
               </div>
             </div>
             <div className="row justify-content-center">
@@ -343,21 +436,34 @@ const Home = () => {
               <div className="col-lg-8 text-center">
                 <h2 className="gradient-text mb-4">Prêt à commencer ?</h2>
                 <p className="lead text-muted mb-4">
-                  Rejoignez notre communauté et commencez à voyager de manière plus économique et écologique.
+                  Rejoignez notre communauté et commencez à voyager de manière
+                  plus économique et écologique.
                 </p>
                 {user ? (
                   <div className="d-flex justify-content-center">
-                    <Link to="/search-rides" className="btn btn-primary btn-lg" aria-label="Rechercher un trajet">
+                    <Link
+                      to="/search-rides"
+                      className="btn btn-primary btn-lg"
+                      aria-label="Rechercher un trajet"
+                    >
                       <FaSearch className="me-2" />
                       Rechercher un trajet
                     </Link>
                   </div>
                 ) : (
                   <div className="d-flex flex-column align-items-center gap-3">
-                    <Link to="/register" className="btn btn-primary btn-lg" aria-label="Créer un compte gratuitement">
+                    <Link
+                      to="/register"
+                      className="btn btn-primary btn-lg"
+                      aria-label="Créer un compte gratuitement"
+                    >
                       Créer un compte gratuitement
                     </Link>
-                    <Link to="/login" className="btn btn-outline-primary btn-lg" aria-label="Se connecter">
+                    <Link
+                      to="/login"
+                      className="btn btn-outline-primary btn-lg"
+                      aria-label="Se connecter"
+                    >
                       Se connecter
                     </Link>
                   </div>
@@ -374,51 +480,7 @@ const Home = () => {
           padding-top: 0;
           transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .dark-mode {
-          --gradient-primary: linear-gradient(135deg, #141e30, #243b55);
-          --gradient-secondary: linear-gradient(135deg, #243b55, #141e30);
-          --primary-color: #0d6efd;
-          --primary-dark: #0a58ca;
-          --text-secondary: #ccc;
-          --light-bg: #1e2a47;
-          background-color: #121212;
-          color: #eee;
-        }
-        .dark-mode .hero-background {
-          filter: brightness(0.4);
-        }
-        .dark-mode .hero-overlay {
-          background: rgba(0,0,0,0.7);
-        }
-        .dark-mode .btn-primary {
-          background-color: var(--primary-color);
-          border-color: var(--primary-color);
-        }
-        .dark-mode .btn-outline-light {
-          color: var(--primary-color);
-          border-color: var(--primary-color);
-        }
-        .dark-mode .btn-outline-light:hover,
-        .dark-mode .btn-outline-light:focus {
-          background-color: var(--primary-color);
-          color: white;
-        }
-
-        /* Dark mode toggle button */
-        .dark-mode-toggle {
-          z-index: 9999;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          color: var(--primary-color);
-          transition: color 0.3s ease;
-        }
-        .dark-mode-toggle:hover,
-        .dark-mode-toggle:focus {
-          color: var(--primary-dark);
-          outline: none;
-        }
-
+        
         /* Hero Section */
         .hero-section {
           position: relative;
@@ -656,7 +718,9 @@ const TestimonialSlider = () => {
   return (
     <blockquote className="blockquote">
       <p className="mb-4">“{testimonials[currentIndex].text}”</p>
-      <footer className="blockquote-footer">{testimonials[currentIndex].name}</footer>
+      <footer className="blockquote-footer">
+        {testimonials[currentIndex].name}
+      </footer>
     </blockquote>
   );
 };

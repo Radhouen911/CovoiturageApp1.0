@@ -20,7 +20,6 @@ const RideDetails = () => {
     expiry: "",
     cvc: "",
   });
-  const [mockPaymentMethodId, setMockPaymentMethodId] = useState(null);
 
   const loadRideDetails = useCallback(async () => {
     try {

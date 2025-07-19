@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
+    private function prepareUserData(User $user)
+    {
+        // Add the is_admin flag to the user object for frontend consumption
+        $user->setAttribute('is_admin', $user->isAdmin());
+        return $user;
+    }
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -44,7 +51,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'User registered successfully',
             'data' => [
-                'user' => $user,
+                'user' => $this->prepareUserData($user), // Use helper to add is_admin
                 'token' => $token,
                 'token_type' => 'Bearer'
             ]
@@ -81,7 +88,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Login successful',
             'data' => [
-                'user' => $user,
+                'user' => $this->prepareUserData($user), // Use helper to add is_admin
                 'token' => $token,
                 'token_type' => 'Bearer'
             ]
@@ -102,14 +109,13 @@ class AuthController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $request->user()
+            'data' => $this->prepareUserData($request->user()) // Use helper to add is_admin
         ]);
     }
 
     public function update(Request $request)
     {
         $user = $request->user();
-
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|max:255|unique:users,email,' . $user->id,
@@ -129,7 +135,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Profil mis à jour avec succès',
-            'data' => $user
+            'data' => $this->prepareUserData($user) // Ensure is_admin is included here too
         ]);
     }
 
@@ -137,7 +143,6 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-
             // Log the request for debugging
             \Log::info('Avatar upload request', [
                 'user_id' => $user->id,
@@ -156,7 +161,6 @@ class AuthController extends Controller
             }
 
             $file = $request->file('avatar');
-
             if (!$file) {
                 return response()->json([
                     'success' => false,
@@ -171,14 +175,13 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Avatar mis à jour',
-                'data' => $user
+                'data' => $this->prepareUserData($user) // Ensure is_admin is included here too
             ]);
         } catch (\Exception $e) {
             \Log::error('Avatar upload error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors du téléchargement: ' . $e->getMessage()
@@ -194,10 +197,11 @@ class AuthController extends Controller
             $user->avatar = null;
             $user->save();
         }
+
         return response()->json([
             'success' => true,
             'message' => 'Avatar supprimé',
-            'data' => $user
+            'data' => $this->prepareUserData($user) // Ensure is_admin is included here too
         ]);
     }
 }

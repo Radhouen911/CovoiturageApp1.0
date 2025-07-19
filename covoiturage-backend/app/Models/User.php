@@ -41,6 +41,14 @@ class User extends Authenticatable
         return $this->hasMany(Booking::class, 'passenger_id');
     }
 
+    /**
+     * Get the tickets filed by the user.
+     */
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
     // Helper methods
     public function isDriver()
     {
@@ -50,5 +58,10 @@ class User extends Authenticatable
     public function isPassenger()
     {
         return $this->role === 'passenger';
+    }
+
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
     }
 }

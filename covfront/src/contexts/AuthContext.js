@@ -1,3 +1,5 @@
+"use client";
+
 import { createContext, useContext, useEffect, useState } from "react";
 import ApiService from "../services/api";
 
@@ -25,18 +27,18 @@ export const AuthProvider = ({ children }) => {
         try {
           setIsLoggedIn(true);
           setUser(JSON.parse(userData)); // Set initial user from storage
-
+          // Validate token and refresh user data from backend
           const response = await ApiService.getCurrentUser();
-          if (response.success) {
+          if (response.success && response.data) {
             setUser(response.data);
-            localStorage.setItem("user", JSON.stringify(response.data));
+            localStorage.setItem("user", JSON.stringify(response.data)); // Update local storage with fresh data
           } else {
             console.warn("Token validation failed:", response.message);
-            logout();
+            logout(); // Log out if token is invalid or user data can't be fetched
           }
         } catch (error) {
           console.error("Auth check failed:", error);
-          logout();
+          logout(); // Log out on any error during auth check
         }
       } else {
         setIsLoggedIn(false);
@@ -44,16 +46,15 @@ export const AuthProvider = ({ children }) => {
       }
       setLoading(false);
     };
-
     checkAuthStatus();
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
   const login = async (credentials) => {
     try {
       const response = await ApiService.login(credentials);
-      if (response.success) {
+      if (response.success && response.data) {
         localStorage.setItem("token", response.data.token); // Save token
-        localStorage.setItem("user", JSON.stringify(response.data.user)); // Save user
+        localStorage.setItem("user", JSON.stringify(response.data.user)); // Save user data (including is_admin)
         setIsLoggedIn(true);
         setUser(response.data.user);
       }
@@ -67,9 +68,9 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       const response = await ApiService.register(userData);
-      if (response.success) {
+      if (response.success && response.data) {
         localStorage.setItem("token", response.data.token); // Save token
-        localStorage.setItem("user", JSON.stringify(response.data.user)); // Save user
+        localStorage.setItem("user", JSON.stringify(response.data.user)); // Save user data (including is_admin)
         setIsLoggedIn(true);
         setUser(response.data.user);
       }

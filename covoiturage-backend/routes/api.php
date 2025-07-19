@@ -7,11 +7,12 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\RideController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\ConversationController;
+use App\Http\Controllers\Api\TicketController;
+use App\Http\Controllers\Api\TicketMessageController; // Make sure this is imported
 use App\Http\Controllers\Api\SSEController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\TicketController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -56,7 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/bookings/{booking}/reject', [BookingController::class, 'reject']);
     Route::put('/bookings/{booking}/cancel', [BookingController::class, 'cancel']);
 
-    // Messaging routes
+    // Existing Messaging routes (ConversationController) - KEPT AS IS
     Route::get('/conversations', [ConversationController::class, 'index']);
     Route::post('/conversations', [ConversationController::class, 'store']);
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
@@ -86,8 +87,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // SSE for real-time messaging
     Route::get('/sse/conversations/{conversationId}', [SSEController::class, 'stream']);
 
-    // Ticket routes
+    // NEW Ticket routes (TicketController)
     Route::get('/tickets', [TicketController::class, 'index']);
     Route::post('/tickets', [TicketController::class, 'store']);
-    Route::put('/tickets/{id}', [TicketController::class, 'update']);
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show']);
+    Route::put('/tickets/{ticket}', [TicketController::class, 'update']); // For status/priority updates by admin
+    Route::patch('/tickets/{ticket}/close', [TicketController::class, 'close']); // Specific route for closing
+
+    // NEW: Ticket Message routes (TicketMessageController)
+    Route::get('/tickets/{ticket}/messages', [TicketMessageController::class, 'index']);
+    Route::post('/tickets/{ticket}/messages', [TicketMessageController::class, 'store']);
 });

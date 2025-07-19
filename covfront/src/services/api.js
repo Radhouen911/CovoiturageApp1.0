@@ -162,6 +162,96 @@ class ApiService {
     }
   }
 
+  async createTicket(ticketData) {
+    try {
+      const response = await api.post("/tickets", ticketData);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Create ticket failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+
+  async getTickets() {
+    try {
+      const response = await api.get("/tickets");
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get tickets failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+
+  async getTicket(ticketId) {
+    try {
+      const response = await api.get(`/tickets/${ticketId}`);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get ticket failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+  async getTicketMessages(ticketId) {
+    try {
+      const response = await api.get(`/tickets/${ticketId}/messages`);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get ticket messages failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+
+  async sendTicketMessage(ticketId, content) {
+    try {
+      const response = await api.post(`/tickets/${ticketId}/messages`, {
+        content,
+      });
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Send ticket message failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+  async updateTicket(ticketId, data) {
+    try {
+      const response = await api.put(`/tickets/${ticketId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Update ticket failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+
+  async closeTicket(ticketId) {
+    try {
+      const response = await api.patch(`/tickets/${ticketId}/close`);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Close ticket failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
   async createRide(rideData) {
     try {
       const response = await api.post("/rides", rideData);

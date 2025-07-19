@@ -10,8 +10,10 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bar, Pie } from "react-chartjs-2";
+import TicketDetail from "../components/TicketDetail";
+import ApiService from "../services/api";
 
 ChartJS.register(
   CategoryScale,
@@ -25,7 +27,42 @@ ChartJS.register(
 
 export default function AdminDashboard() {
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [tickets, setTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [errorTickets, setErrorTickets] = useState(null);
 
+  // Fetch tickets from backend
+  useEffect(() => {
+    const fetchTickets = async () => {
+      setLoadingTickets(true);
+      setErrorTickets(null);
+      try {
+        const response = await ApiService.getTickets();
+        if (response.success) {
+          // Sort tickets by latest update
+          const sortedTickets = response.data.sort((a, b) => {
+            return new Date(b.updated_at) - new Date(a.updated_at);
+          });
+          setTickets(sortedTickets);
+        } else {
+          setErrorTickets(
+            response.message || "Échec du chargement des tickets."
+          );
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des tickets :", error);
+        setErrorTickets(
+          "Une erreur est survenue lors du chargement des tickets."
+        );
+      } finally {
+        setLoadingTickets(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
+
+  // Mock data for charts (can be replaced with real data fetching later)
   const rideStats = {
     labels: ["Total", "Accepted", "Rejected"],
     datasets: [
@@ -128,49 +165,6 @@ export default function AdminDashboard() {
     },
   };
 
-  const tickets = [
-    {
-      id: 1,
-      user_id: 101,
-      ride_id: null,
-      subject: "App Issue",
-      description: "Login not working properly after recent update",
-      status: "open",
-      priority: "high",
-      created_at: "2024-01-15",
-    },
-    {
-      id: 2,
-      user_id: 102,
-      ride_id: 5,
-      subject: "Late Driver",
-      description: "Driver was late by 30 minutes without notification",
-      status: "in_progress",
-      priority: "medium",
-      created_at: "2024-01-14",
-    },
-    {
-      id: 3,
-      user_id: 103,
-      ride_id: 7,
-      subject: "Payment Failed",
-      description: "Card declined during payment processing",
-      status: "closed",
-      priority: "low",
-      created_at: "2024-01-13",
-    },
-    {
-      id: 4,
-      user_id: 104,
-      ride_id: 12,
-      subject: "Route Issue",
-      description: "GPS navigation showing incorrect route",
-      status: "open",
-      priority: "medium",
-      created_at: "2024-01-12",
-    },
-  ];
-
   const getStatusBadge = (status) => {
     const styles = {
       open: {
@@ -229,6 +223,7 @@ export default function AdminDashboard() {
     );
   };
 
+  // Mock data for stats and recent activity (can be replaced with real data later)
   const stats = [
     {
       label: "Total Rides",
@@ -259,7 +254,7 @@ export default function AdminDashboard() {
     },
     {
       label: "Open Tickets",
-      value: "23",
+      value: tickets.filter((t) => t.status === "open").length.toString(), // Dynamic count
       change: "-3%",
       icon: "🎫",
       trend: "down",
@@ -301,477 +296,81 @@ export default function AdminDashboard() {
     },
   ];
 
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      backgroundColor: "#f9fafb",
-      fontFamily:
-        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    },
-    header: {
-      backgroundColor: "white",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-      borderBottom: "1px solid #e5e7eb",
-      position: "sticky",
-      top: 0,
-      zIndex: 40,
-    },
-    headerContent: {
-      maxWidth: "1280px",
-      margin: "0 auto",
-      padding: "16px 24px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    title: {
-      fontSize: "30px",
-      fontWeight: "bold",
-      color: "#111827",
-      margin: 0,
-    },
-    subtitle: {
-      color: "#6b7280",
-      fontSize: "14px",
-      margin: "4px 0 0 0",
-    },
-    liveBadge: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      padding: "6px 12px",
-      backgroundColor: "#dcfce7",
-      color: "#166534",
-      borderRadius: "9999px",
-      fontSize: "14px",
-      fontWeight: "500",
-    },
-    pulse: {
-      width: "8px",
-      height: "8px",
-      backgroundColor: "#22c55e",
-      borderRadius: "50%",
-      animation: "pulse 2s infinite",
-    },
-    mainContent: {
-      maxWidth: "1280px",
-      margin: "0 auto",
-      padding: "32px 24px",
-    },
-    statsGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-      gap: "24px",
-      marginBottom: "32px",
-    },
-    statCard: {
-      padding: "24px",
-      borderRadius: "12px",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-      border: "1px solid #e5e7eb",
-      transition: "all 0.3s ease",
-      cursor: "pointer",
-    },
-    statHeader: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      marginBottom: "16px",
-    },
-    statIcon: {
-      fontSize: "24px",
-    },
-    statChange: {
-      fontSize: "12px",
-      fontWeight: "600",
-      padding: "4px 8px",
-      borderRadius: "9999px",
-    },
-    statLabel: {
-      fontSize: "14px",
-      fontWeight: "500",
-      color: "#6b7280",
-      marginBottom: "4px",
-    },
-    statValue: {
-      fontSize: "24px",
-      fontWeight: "bold",
-      color: "#111827",
-    },
-    statSubtext: {
-      fontSize: "12px",
-      color: "#9ca3af",
-      marginTop: "4px",
-    },
-    chartsGrid: {
-      display: "grid",
-      gridTemplateColumns: "2fr 1fr",
-      gap: "32px",
-      marginBottom: "32px",
-    },
-    chartsSection: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "24px",
-    },
-    chartCard: {
-      backgroundColor: "white",
-      borderRadius: "12px",
-      padding: "24px",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-      border: "1px solid #e5e7eb",
-    },
-    chartHeader: {
-      marginBottom: "16px",
-    },
-    chartTitle: {
-      fontSize: "18px",
-      fontWeight: "600",
-      color: "#111827",
-      margin: "0 0 4px 0",
-    },
-    chartDescription: {
-      fontSize: "14px",
-      color: "#6b7280",
-      margin: 0,
-    },
-    chartContainer: {
-      height: "320px",
-    },
-    sidebar: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "24px",
-    },
-    activityCard: {
-      backgroundColor: "white",
-      borderRadius: "12px",
-      padding: "24px",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-      border: "1px solid #e5e7eb",
-    },
-    activityHeader: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      marginBottom: "16px",
-    },
-    activityDot: {
-      width: "8px",
-      height: "8px",
-      backgroundColor: "#3b82f6",
-      borderRadius: "50%",
-    },
-    activityTitle: {
-      fontSize: "18px",
-      fontWeight: "600",
-      color: "#111827",
-      margin: 0,
-    },
-    activityList: {
-      maxHeight: "256px",
-      overflowY: "auto",
-    },
-    activityItem: {
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "12px",
-      padding: "12px",
-      borderRadius: "8px",
-      transition: "background-color 0.2s ease",
-      cursor: "pointer",
-    },
-    activityIcon: {
-      fontSize: "16px",
-      flexShrink: 0,
-      marginTop: "2px",
-    },
-    activityContent: {
-      flex: 1,
-      minWidth: 0,
-    },
-    activityAction: {
-      fontSize: "14px",
-      fontWeight: "500",
-      color: "#374151",
-      margin: "0 0 4px 0",
-    },
-    activityTime: {
-      fontSize: "12px",
-      color: "#9ca3af",
-      margin: 0,
-    },
-    quickActionsCard: {
-      backgroundColor: "white",
-      borderRadius: "12px",
-      padding: "24px",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-      border: "1px solid #e5e7eb",
-    },
-    quickActionsTitle: {
-      fontSize: "18px",
-      fontWeight: "600",
-      color: "#111827",
-      margin: "0 0 16px 0",
-    },
-    quickActionsButtons: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
-    },
-    actionButton: {
-      width: "100%",
-      padding: "12px 16px",
-      borderRadius: "8px",
-      border: "none",
-      fontSize: "14px",
-      fontWeight: "500",
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "8px",
-    },
-    ticketsCard: {
-      backgroundColor: "white",
-      borderRadius: "12px",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-      border: "1px solid #e5e7eb",
-      overflow: "hidden",
-    },
-    ticketsHeader: {
-      padding: "16px 24px",
-      borderBottom: "1px solid #e5e7eb",
-      backgroundColor: "#f9fafb",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    ticketsHeaderLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-    },
-    ticketsTitle: {
-      fontSize: "18px",
-      fontWeight: "600",
-      color: "#111827",
-      margin: 0,
-    },
-    openBadge: {
-      display: "inline-flex",
-      alignItems: "center",
-      padding: "4px 10px",
-      borderRadius: "9999px",
-      fontSize: "12px",
-      fontWeight: "500",
-      backgroundColor: "#fef2f2",
-      color: "#991b1b",
-    },
-    viewAllButton: {
-      fontSize: "14px",
-      color: "#2563eb",
-      fontWeight: "500",
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-    },
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-    },
-    tableHeader: {
-      backgroundColor: "#f9fafb",
-    },
-    tableHeaderCell: {
-      padding: "12px 24px",
-      textAlign: "left",
-      fontSize: "12px",
-      fontWeight: "500",
-      color: "#6b7280",
-      textTransform: "uppercase",
-      letterSpacing: "0.05em",
-      borderBottom: "1px solid #e5e7eb",
-    },
-    tableRow: {
-      borderBottom: "1px solid #e5e7eb",
-      transition: "background-color 0.2s ease",
-      cursor: "pointer",
-    },
-    tableCell: {
-      padding: "16px 24px",
-      fontSize: "14px",
-      color: "#111827",
-    },
-    userCell: {
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-    },
-    userAvatar: {
-      width: "32px",
-      height: "32px",
-      background: "linear-gradient(45deg, #3b82f6, #8b5cf6)",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "white",
-      fontSize: "12px",
-      fontWeight: "bold",
-    },
-    subjectCell: {
-      maxWidth: "300px",
-    },
-    subjectTitle: {
-      fontWeight: "500",
-      marginBottom: "4px",
-    },
-    subjectDescription: {
-      fontSize: "12px",
-      color: "#6b7280",
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-      whiteSpace: "nowrap",
-    },
-    modal: {
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "16px",
-      zIndex: 50,
-    },
-    modalContent: {
-      backgroundColor: "white",
-      borderRadius: "12px",
-      padding: "24px",
-      maxWidth: "448px",
-      width: "100%",
-      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-    },
-    modalHeader: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "16px",
-    },
-    modalTitle: {
-      fontSize: "18px",
-      fontWeight: "600",
-      color: "#111827",
-      margin: 0,
-    },
-    closeButton: {
-      background: "none",
-      border: "none",
-      color: "#9ca3af",
-      cursor: "pointer",
-      padding: "4px",
-      borderRadius: "4px",
-      transition: "color 0.2s ease",
-    },
-    modalBody: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "16px",
-    },
-    modalField: {
-      display: "flex",
-      flexDirection: "column",
-    },
-    modalLabel: {
-      fontSize: "14px",
-      fontWeight: "500",
-      color: "#6b7280",
-      marginBottom: "4px",
-    },
-    modalValue: {
-      color: "#111827",
-    },
-    modalGrid: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "16px",
-    },
-    modalActions: {
-      display: "flex",
-      gap: "12px",
-      paddingTop: "16px",
-    },
-    modalButton: {
-      flex: 1,
-      padding: "8px 16px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: "500",
-      cursor: "pointer",
-      transition: "all 0.2s ease",
-      border: "none",
-    },
-  };
-
   return (
-    <div style={styles.container}>
-      <style>
-        {`
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-          
-          .stat-card:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            transform: translateY(-1px);
-          }
-          
-          .activity-item:hover {
-            background-color: #f9fafb;
-          }
-          
-          .table-row:hover {
-            background-color: #f9fafb;
-          }
-          
-          .action-button:hover {
-            transform: translateY(-1px);
-          }
-          
-          .close-button:hover {
-            color: #6b7280;
-          }
-          
-          @media (max-width: 1024px) {
-            .charts-grid {
-              grid-template-columns: 1fr !important;
-            }
-          }
-          
-          @media (max-width: 640px) {
-            .stats-grid {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}
-      </style>
-
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#f9fafb",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      }}
+    >
       {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerContent}>
+      <header
+        style={{
+          backgroundColor: "white",
+          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+          borderBottom: "1px solid #e5e7eb",
+          position: "sticky",
+          top: 0,
+          zIndex: 40,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1280px",
+            margin: "0 auto",
+            padding: "16px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <div>
-            <h1 style={styles.title}>Admin Dashboard</h1>
-            <p style={styles.subtitle}>Real-time insights and management</p>
+            <h1
+              style={{
+                fontSize: "30px",
+                fontWeight: "bold",
+                color: "#111827",
+                margin: 0,
+              }}
+            >
+              Tableau de bord Admin
+            </h1>
+            <p
+              style={{
+                color: "#6b7280",
+                fontSize: "14px",
+                margin: "4px 0 0 0",
+              }}
+            >
+              Aperçus et gestion en temps réel
+            </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div style={styles.liveBadge}>
-              <div style={styles.pulse}></div>
-              Live
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "6px 12px",
+                backgroundColor: "#dcfce7",
+                color: "#166534",
+                borderRadius: "9999px",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              <div
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  backgroundColor: "#22c55e",
+                  borderRadius: "50%",
+                  animation: "pulse 2s infinite",
+                }}
+              />
+              En direct
             </div>
             <span style={{ fontSize: "14px", color: "#6b7280" }}>
               {new Date().toLocaleTimeString()}
@@ -779,26 +378,58 @@ export default function AdminDashboard() {
           </div>
         </div>
       </header>
-
-      <div style={styles.mainContent}>
+      <div
+        style={{ maxWidth: "1280px", margin: "0 auto", padding: "32px 24px" }}
+      >
         {/* Stats Cards */}
-        <div style={styles.statsGrid} className="stats-grid">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gap: "24px",
+            marginBottom: "32px",
+          }}
+        >
           {stats.map((stat, index) => (
             <div
               key={index}
               style={{
-                ...styles.statCard,
+                padding: "24px",
+                borderRadius: "12px",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e5e7eb",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
                 backgroundColor: stat.bgColor,
               }}
-              className="stat-card"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow =
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow =
+                  "0 1px 3px 0 rgba(0, 0, 0, 0.1)";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
             >
-              <div style={styles.statHeader}>
-                <div style={{ ...styles.statIcon, color: stat.iconColor }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ fontSize: "24px", color: stat.iconColor }}>
                   {stat.icon}
                 </div>
                 <div
                   style={{
-                    ...styles.statChange,
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    padding: "4px 8px",
+                    borderRadius: "9999px",
                     backgroundColor:
                       stat.trend === "up" ? "#dcfce7" : "#fef2f2",
                     color: stat.trend === "up" ? "#166534" : "#991b1b",
@@ -807,80 +438,245 @@ export default function AdminDashboard() {
                   {stat.change}
                 </div>
               </div>
-              <p style={styles.statLabel}>{stat.label}</p>
-              <p style={styles.statValue}>{stat.value}</p>
-              <p style={styles.statSubtext}>from last month</p>
+              <p
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  color: "#6b7280",
+                  marginBottom: "4px",
+                }}
+              >
+                {stat.label}
+              </p>
+              <p
+                style={{
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  color: "#111827",
+                }}
+              >
+                {stat.value}
+              </p>
+              <p
+                style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}
+              >
+                du mois dernier
+              </p>
             </div>
           ))}
         </div>
-
         {/* Charts and Activity */}
-        <div style={styles.chartsGrid} className="charts-grid">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 1fr",
+            gap: "32px",
+            marginBottom: "32px",
+          }}
+          className="charts-grid"
+        >
           {/* Charts */}
-          <div style={styles.chartsSection}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+          >
             {/* Bar Chart */}
-            <div style={styles.chartCard}>
-              <div style={styles.chartHeader}>
-                <h3 style={styles.chartTitle}>Ride Statistics</h3>
-                <p style={styles.chartDescription}>
-                  Overview of ride requests and outcomes
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                padding: "24px",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <div style={{ marginBottom: "16px" }}>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#111827",
+                    margin: "0 0 4px 0",
+                  }}
+                >
+                  Statistiques des trajets
+                </h3>
+                <p style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}>
+                  Aperçu des demandes et résultats de trajets
                 </p>
               </div>
-              <div style={styles.chartContainer}>
+              <div style={{ height: "320px" }}>
                 <Bar options={barOptions} data={rideStats} />
               </div>
             </div>
-
             {/* Pie Chart */}
-            <div style={styles.chartCard}>
-              <div style={styles.chartHeader}>
-                <h3 style={styles.chartTitle}>Top Contributors</h3>
-                <p style={styles.chartDescription}>
-                  Driver performance breakdown
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                padding: "24px",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <div style={{ marginBottom: "16px" }}>
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#111827",
+                    margin: "0 0 4px 0",
+                  }}
+                >
+                  Meilleurs contributeurs
+                </h3>
+                <p style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}>
+                  Répartition des performances des conducteurs
                 </p>
               </div>
-              <div style={styles.chartContainer}>
+              <div style={{ height: "320px" }}>
                 <Pie options={pieOptions} data={contributorData} />
               </div>
             </div>
           </div>
-
           {/* Sidebar */}
-          <div style={styles.sidebar}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+          >
             {/* Recent Activity */}
-            <div style={styles.activityCard}>
-              <div style={styles.activityHeader}>
-                <div style={styles.activityDot}></div>
-                <h3 style={styles.activityTitle}>Recent Activity</h3>
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                padding: "24px",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    backgroundColor: "#3b82f6",
+                    borderRadius: "50%",
+                  }}
+                />
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "600",
+                    color: "#111827",
+                    margin: 0,
+                  }}
+                >
+                  Activité récente
+                </h3>
               </div>
-              <div style={styles.activityList}>
+              <div style={{ maxHeight: "256px", overflowY: "auto" }}>
                 {recentActivity.map((activity, index) => (
                   <div
                     key={index}
-                    style={styles.activityItem}
-                    className="activity-item"
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                      padding: "12px",
+                      borderRadius: "8px",
+                      transition: "background-color 0.2s ease",
+                      cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f9fafb")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
                   >
-                    <span style={styles.activityIcon}>{activity.icon}</span>
-                    <div style={styles.activityContent}>
-                      <p style={styles.activityAction}>{activity.action}</p>
-                      <p style={styles.activityTime}>{activity.time}</p>
+                    <span
+                      style={{
+                        fontSize: "16px",
+                        flexShrink: 0,
+                        marginTop: "2px",
+                      }}
+                    >
+                      {activity.icon}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "#374151",
+                          margin: "0 0 4px 0",
+                        }}
+                      >
+                        {activity.action}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: "12px",
+                          color: "#9ca3af",
+                          margin: 0,
+                        }}
+                      >
+                        {activity.time}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-
             {/* Quick Actions */}
-            <div style={styles.quickActionsCard}>
-              <h3 style={styles.quickActionsTitle}>Quick Actions</h3>
-              <div style={styles.quickActionsButtons}>
+            <div
+              style={{
+                backgroundColor: "white",
+                borderRadius: "12px",
+                padding: "24px",
+                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#111827",
+                  margin: "0 0 16px 0",
+                }}
+              >
+                Actions rapides
+              </h3>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
                 <button
                   style={{
-                    ...styles.actionButton,
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
                     backgroundColor: "#2563eb",
                     color: "white",
                   }}
-                  className="action-button"
                   onMouseEnter={(e) =>
                     (e.target.style.backgroundColor = "#1d4ed8")
                   }
@@ -889,15 +685,25 @@ export default function AdminDashboard() {
                   }
                 >
                   <span>➕</span>
-                  Add New Driver
+                  Ajouter un nouveau conducteur
                 </button>
                 <button
                   style={{
-                    ...styles.actionButton,
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
                     backgroundColor: "#16a34a",
                     color: "white",
                   }}
-                  className="action-button"
                   onMouseEnter={(e) =>
                     (e.target.style.backgroundColor = "#15803d")
                   }
@@ -906,15 +712,25 @@ export default function AdminDashboard() {
                   }
                 >
                   <span>📊</span>
-                  Generate Report
+                  Générer un rapport
                 </button>
                 <button
                   style={{
-                    ...styles.actionButton,
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "none",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
                     backgroundColor: "#9333ea",
                     color: "white",
                   }}
-                  className="action-button"
                   onMouseEnter={(e) =>
                     (e.target.style.backgroundColor = "#7c3aed")
                   }
@@ -923,147 +739,428 @@ export default function AdminDashboard() {
                   }
                 >
                   <span>⚙️</span>
-                  Manage Settings
+                  Gérer les paramètres
                 </button>
               </div>
             </div>
           </div>
         </div>
-
         {/* Support Tickets */}
-        <div style={styles.ticketsCard}>
-          <div style={styles.ticketsHeader}>
-            <div style={styles.ticketsHeaderLeft}>
-              <h3 style={styles.ticketsTitle}>Support Tickets</h3>
-              <span style={styles.openBadge}>
-                {tickets.filter((t) => t.status === "open").length} Open
-              </span>
+        <div
+          style={{
+            backgroundColor: "white",
+            borderRadius: "12px",
+            boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+            border: "1px solid #e5e7eb",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "16px 24px",
+              borderBottom: "1px solid #e5e7eb",
+              backgroundColor: "#f9fafb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <h3
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "600",
+                  color: "#111827",
+                  margin: 0,
+                }}
+              >
+                Tickets de support
+              </h3>
+              {loadingTickets ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "4px 10px",
+                    borderRadius: "9999px",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                    backgroundColor: "#fef2f2",
+                    color: "#991b1b",
+                  }}
+                >
+                  Chargement...
+                </span>
+              ) : errorTickets ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "4px 10px",
+                    borderRadius: "9999px",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                    backgroundColor: "#fef2f2",
+                    color: "#c53030",
+                  }}
+                >
+                  Erreur
+                </span>
+              ) : (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    padding: "4px 10px",
+                    borderRadius: "9999px",
+                    fontSize: "12px",
+                    fontWeight: "500",
+                    backgroundColor: "#fef2f2",
+                    color: "#991b1b",
+                  }}
+                >
+                  {tickets.filter((t) => t.status === "open").length} Ouvert
+                </span>
+              )}
             </div>
-            <button style={styles.viewAllButton}>View All</button>
+            <button
+              style={{
+                fontSize: "14px",
+                color: "#2563eb",
+                fontWeight: "500",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Voir tout
+            </button>
           </div>
           <div style={{ overflowX: "auto" }}>
-            <table style={styles.table}>
-              <thead style={styles.tableHeader}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead style={{ backgroundColor: "#f9fafb" }}>
                 <tr>
-                  <th style={styles.tableHeaderCell}>Ticket ID</th>
-                  <th style={styles.tableHeaderCell}>User</th>
-                  <th style={styles.tableHeaderCell}>Subject</th>
-                  <th style={styles.tableHeaderCell}>Priority</th>
-                  <th style={styles.tableHeaderCell}>Status</th>
-                  <th style={styles.tableHeaderCell}>Date</th>
+                  <th
+                    style={{
+                      padding: "12px 24px",
+                      textAlign: "left",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    ID du Ticket
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 24px",
+                      textAlign: "left",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    Utilisateur
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 24px",
+                      textAlign: "left",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    Sujet
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 24px",
+                      textAlign: "left",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    Priorité
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 24px",
+                      textAlign: "left",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    Statut
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 24px",
+                      textAlign: "left",
+                      fontSize: "12px",
+                      fontWeight: "500",
+                      color: "#6b7280",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      borderBottom: "1px solid #e5e7eb",
+                    }}
+                  >
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {tickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    style={styles.tableRow}
-                    className="table-row"
-                    onClick={() => setSelectedTicket(ticket)}
-                  >
-                    <td style={{ ...styles.tableCell, fontWeight: "500" }}>
-                      #{ticket.id}
-                    </td>
-                    <td style={styles.tableCell}>
-                      <div style={styles.userCell}>
-                        <div style={styles.userAvatar}>
-                          {ticket.user_id.toString().slice(-2)}
-                        </div>
-                        <span>User {ticket.user_id}</span>
-                      </div>
-                    </td>
-                    <td style={styles.tableCell}>
-                      <div style={styles.subjectCell}>
-                        <div style={styles.subjectTitle}>{ticket.subject}</div>
-                        <div style={styles.subjectDescription}>
-                          {ticket.description}
-                        </div>
-                      </div>
-                    </td>
-                    <td style={styles.tableCell}>
-                      {getPriorityBadge(ticket.priority)}
-                    </td>
-                    <td style={styles.tableCell}>
-                      {getStatusBadge(ticket.status)}
-                    </td>
-                    <td style={{ ...styles.tableCell, color: "#6b7280" }}>
-                      {ticket.created_at}
+                {loadingTickets ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{
+                        textAlign: "center",
+                        padding: "20px",
+                        fontSize: "14px",
+                        color: "#111827",
+                      }}
+                    >
+                      Chargement des tickets...
                     </td>
                   </tr>
-                ))}
+                ) : errorTickets ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{
+                        textAlign: "center",
+                        padding: "20px",
+                        color: "#c53030",
+                        fontSize: "14px",
+                      }}
+                    >
+                      {errorTickets}
+                    </td>
+                  </tr>
+                ) : tickets.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{
+                        textAlign: "center",
+                        padding: "20px",
+                        fontSize: "14px",
+                        color: "#111827",
+                      }}
+                    >
+                      Aucun ticket trouvé.
+                    </td>
+                  </tr>
+                ) : (
+                  tickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      style={{
+                        borderBottom: "1px solid #e5e7eb",
+                        transition: "background-color 0.2s ease",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setSelectedTicket(ticket)}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f9fafb")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <td
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          fontWeight: "500",
+                        }}
+                      >
+                        #{ticket.id}
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: "14px",
+                          color: "#111827",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: "32px",
+                              height: "32px",
+                              background:
+                                "linear-gradient(45deg, #3b82f6, #8b5cf6)",
+                              borderRadius: "50%",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {ticket.user
+                              ? ticket.user.name.charAt(0).toUpperCase()
+                              : ticket.user_id.toString().slice(-2)}
+                          </div>
+                          <span>
+                            {ticket.user
+                              ? ticket.user.name
+                              : `Utilisateur ${ticket.user_id}`}
+                          </span>
+                        </div>
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: "14px",
+                          color: "#111827",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        <div style={{ fontWeight: "500", marginBottom: "4px" }}>
+                          {ticket.subject}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "#6b7280",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {ticket.description}
+                        </div>
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: "14px",
+                          color: "#111827",
+                        }}
+                      >
+                        {getPriorityBadge(ticket.priority)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: "14px",
+                          color: "#111827",
+                        }}
+                      >
+                        {getStatusBadge(ticket.status)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "16px 24px",
+                          fontSize: "14px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        {new Date(ticket.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
-      {/* Ticket Modal */}
+      {/* Ticket Detail Modal */}
       {selectedTicket && (
-        <div style={styles.modal} onClick={() => setSelectedTicket(null)}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Ticket #{selectedTicket.id}</h3>
-              <button
-                style={styles.closeButton}
-                className="close-button"
-                onClick={() => setSelectedTicket(null)}
-              >
-                <svg
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div style={styles.modalBody}>
-              <div style={styles.modalField}>
-                <label style={styles.modalLabel}>Subject</label>
-                <p style={styles.modalValue}>{selectedTicket.subject}</p>
-              </div>
-              <div style={styles.modalField}>
-                <label style={styles.modalLabel}>Description</label>
-                <p style={styles.modalValue}>{selectedTicket.description}</p>
-              </div>
-              <div style={styles.modalGrid}>
-                <div style={styles.modalField}>
-                  <label style={styles.modalLabel}>Status</label>
-                  <div>{getStatusBadge(selectedTicket.status)}</div>
-                </div>
-                <div style={styles.modalField}>
-                  <label style={styles.modalLabel}>Priority</label>
-                  <div>{getPriorityBadge(selectedTicket.priority)}</div>
-                </div>
-              </div>
-              <div style={styles.modalActions}>
-                <button
-                  style={{
-                    ...styles.modalButton,
-                    backgroundColor: "#2563eb",
-                    color: "white",
-                  }}
-                >
-                  Assign
-                </button>
-                <button
-                  style={{
-                    ...styles.modalButton,
-                    backgroundColor: "#16a34a",
-                    color: "white",
-                  }}
-                >
-                  Resolve
-                </button>
-              </div>
-            </div>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+            zIndex: 50,
+          }}
+          onClick={() => setSelectedTicket(null)}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "12px",
+              padding: "24px",
+              maxWidth: "800px",
+              width: "100%",
+              height: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TicketDetail
+              ticketId={selectedTicket.id}
+              onBack={() => setSelectedTicket(null)}
+              onTicketUpdated={(updatedTicketId) => {
+                const fetchTickets = async () => {
+                  setLoadingTickets(true);
+                  setErrorTickets(null);
+                  try {
+                    const response = await ApiService.getTickets();
+                    if (response.success) {
+                      const sortedTickets = response.data.sort((a, b) => {
+                        return new Date(b.updated_at) - new Date(a.updated_at);
+                      });
+                      setTickets(sortedTickets);
+                    } else {
+                      setErrorTickets(
+                        response.message ||
+                          "Échec de l'actualisation des tickets."
+                      );
+                    }
+                  } catch (err) {
+                    console.error(
+                      "Erreur lors de l'actualisation des tickets :",
+                      err
+                    );
+                    setErrorTickets(
+                      "Erreur lors de l'actualisation de la liste des tickets."
+                    );
+                  } finally {
+                    setLoadingTickets(false);
+                  }
+                };
+                fetchTickets();
+              }}
+            />
           </div>
         </div>
       )}

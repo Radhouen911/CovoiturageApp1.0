@@ -5,7 +5,6 @@ import "./App.css";
 
 import Footer from "./components/Footer";
 import Header from "./components/Header";
-import TicketDetail from "./components/TicketDetail";
 import { AuthProvider } from "./contexts/AuthContext";
 import AdminDashboard from "./pages/AdminDashboard";
 import APropos from "./pages/APropos";
@@ -23,6 +22,7 @@ import Login from "./pages/Login";
 import MentionsLegales from "./pages/MentionsLegales";
 import Messages from "./pages/Messages";
 import MyRides from "./pages/MyRides";
+import MyTicketsPage from "./pages/MyTicketsPage";
 import Notifications from "./pages/Notifications";
 import Postuler from "./pages/Postuler";
 import Presse from "./pages/Presse";
@@ -73,8 +73,8 @@ function App() {
               <Route path="/mentions" element={<MentionsLegales />} />
               <Route path="/legal-notice" element={<MentionsLegales />} />
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/create-ticket" element={<CreateTicket />} />{" "}
-              <Route path="/admin/tickets/:id" element={<TicketDetail />} />{" "}
+              <Route path="/create-ticket" element={<CreateTicket />} />
+              <Route path="/my-tickets" element={<MyTicketsPage />} />{" "}
               {/* New route */}
             </Routes>
           </main>

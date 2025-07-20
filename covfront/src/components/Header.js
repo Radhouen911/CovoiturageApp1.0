@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import {
   FaBell,
   FaCar,
-  FaCog,
   FaComments,
   FaHome,
+  FaPlus,
   FaSearch,
   FaSignOutAlt,
   FaUser,
-  FaUserFriends,
 } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -67,13 +66,23 @@ const Header = () => {
     return location.pathname === path;
   };
 
-  const navItems = [
+  // Dynamic nav items based on user and role
+  let navItems = [
     { path: "/", label: "Accueil", icon: <FaHome /> },
-    { path: "/search-rides", label: "Rechercher", icon: <FaSearch /> },
-    { path: "/my-rides", label: "Trajets", icon: <FaCar /> },
-    { path: "/messages", label: "Messages", icon: <FaComments /> },
-    { path: "/profile", label: "Profil", icon: <FaUserFriends /> },
+    { path: "/search-rides", label: "Recherche", icon: <FaSearch /> },
   ];
+
+  if (user) {
+    if (user.role === "driver") {
+      navItems.push(
+        { path: "/create-ride", label: "Publier un trajet", icon: <FaPlus /> },
+        { path: "/my-rides", label: "Trajets", icon: <FaCar /> }
+      );
+    } else {
+      // Passenger or other roles
+      navItems.push({ path: "/my-rides", label: "Trajets", icon: <FaCar /> });
+    }
+  }
 
   return (
     <nav
@@ -121,7 +130,7 @@ const Header = () => {
           {user ? (
             <div className="navbar-nav ms-auto">
               {/* Notifications */}
-              <div className="nav-item dropdown me-3">
+              <div className="nav-item dropdown me-3 d-flex align-items-center">
                 <Link
                   className="nav-link position-relative"
                   to="/notifications"
@@ -207,13 +216,14 @@ const Header = () => {
                     {user?.role !== "admin" && (
                       <Link className="dropdown-item" to="/create-ticket">
                         <FaUser className="me-2" />
-                        File a Complaint
+                        Signaler un Problème
                       </Link>
                     )}
-                    <Link className="dropdown-item" to="/settings">
-                      <FaCog className="me-2" />
-                      Paramètres
+                    <Link className="dropdown-item" to="/messages">
+                      <FaComments className="me-2" />
+                      Messages
                     </Link>
+
                     <div className="dropdown-divider"></div>
                     <button
                       className="dropdown-item text-danger"

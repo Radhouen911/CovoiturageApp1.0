@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import ApiService from "../services/api";
@@ -15,7 +15,7 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('disconnected'); // 'connected', 'connecting', 'disconnected'
+  const [connectionStatus, setConnectionStatus] = useState("disconnected"); // 'connected', 'connecting', 'disconnected'
   const messagesEndRef = useRef(null);
   const eventSourceRef = useRef(null);
   const navigate = useNavigate();
@@ -52,7 +52,7 @@ const Messages = () => {
       if (eventSourceRef.current) {
         // Close SSE connection
         eventSourceRef.current.close();
-        
+
         // Close Echo channel if exists
         if (eventSourceRef.current.echoChannel) {
           eventSourceRef.current.echoChannel.unsubscribe();
@@ -67,46 +67,49 @@ const Messages = () => {
       eventSourceRef.current.close();
     }
 
-    setConnectionStatus('connecting');
+    setConnectionStatus("connecting");
 
-    const token = localStorage.getItem('token');
-    const lastMessageId = messages.length > 0 ? Math.max(...messages.map(m => m.id)) : 0;
-    
+    const token = localStorage.getItem("token");
+    const lastMessageId =
+      messages.length > 0 ? Math.max(...messages.map((m) => m.id)) : 0;
+
     const url = `http://127.0.0.1:8000/api/sse/conversations/${conversationId}?token=${token}&last_message_id=${lastMessageId}`;
-    
-    console.log('Starting SSE connection for conversation:', conversationId);
-    
+
+    console.log("Starting SSE connection for conversation:", conversationId);
+
     const eventSource = new EventSource(url);
 
     eventSource.onopen = () => {
-      console.log('SSE connection opened for conversation:', conversationId);
-      setConnectionStatus('connected');
+      console.log("SSE connection opened for conversation:", conversationId);
+      setConnectionStatus("connected");
     };
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
-        if (data.type === 'ping') {
+
+        if (data.type === "ping") {
           // Keep-alive ping, ignore
           return;
         }
 
-        console.log('Received real-time message via SSE:', data);
+        console.log("Received real-time message via SSE:", data);
         handleNewMessage(data);
-        
       } catch (error) {
-        console.error('Error parsing SSE data:', error);
+        console.error("Error parsing SSE data:", error);
       }
     };
 
     eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-      setConnectionStatus('disconnected');
+      console.error("SSE connection error:", error);
+      setConnectionStatus("disconnected");
       // Reconnect after 3 seconds
       setTimeout(() => {
-        if (selectedConversation && selectedConversation.id === conversationId) {
-          console.log('Reconnecting SSE...');
+        if (
+          selectedConversation &&
+          selectedConversation.id === conversationId
+        ) {
+          console.log("Reconnecting SSE...");
           startSSEConnection(conversationId);
         }
       }, 3000);
@@ -119,26 +122,30 @@ const Messages = () => {
   };
 
   const startEchoChannel = (conversationId) => {
-    const token = localStorage.getItem('token');
-    
+    const token = localStorage.getItem("token");
+
     if (!token) {
-      console.error('No token available for Echo channel');
+      console.error("No token available for Echo channel");
       return;
     }
 
     try {
       // Join the private conversation channel
-      const channel = echo.private(`conversation.${conversationId}`)
+      const channel = echo
+        .private(`conversation.${conversationId}`)
         .subscribed(() => {
-          console.log('Echo channel subscribed for conversation:', conversationId);
+          console.log(
+            "Echo channel subscribed for conversation:",
+            conversationId
+          );
         })
         .error((error) => {
-          console.error('Echo channel error:', error);
+          console.error("Echo channel error:", error);
         });
 
       // Listen for new messages
-      channel.listen('NewMessage', (event) => {
-        console.log('Received real-time message via Echo:', event);
+      channel.listen("NewMessage", (event) => {
+        console.log("Received real-time message via Echo:", event);
         handleNewMessage(event);
       });
 
@@ -147,7 +154,7 @@ const Messages = () => {
         eventSourceRef.current.echoChannel = channel;
       }
     } catch (error) {
-      console.error('Error setting up Echo channel:', error);
+      console.error("Error setting up Echo channel:", error);
     }
   };
 
@@ -162,22 +169,22 @@ const Messages = () => {
       sender: {
         id: data.sender_id,
         name: data.sender_name,
-      }
+      },
     };
-    
+
     // Only add if message doesn't already exist
-    setMessages(prev => {
-      const messageExists = prev.some(msg => msg.id === newMessage.id);
+    setMessages((prev) => {
+      const messageExists = prev.some((msg) => msg.id === newMessage.id);
       if (!messageExists) {
         return [...prev, newMessage];
       }
       return prev;
     });
-    
+
     // Update conversations list with new message
-    setConversations(prev => 
-      prev.map(conv => 
-        conv.id === data.conversation_id 
+    setConversations((prev) =>
+      prev.map((conv) =>
+        conv.id === data.conversation_id
           ? { ...conv, last_message_at: data.created_at }
           : conv
       )
@@ -189,19 +196,23 @@ const Messages = () => {
 
   const playNotificationSound = () => {
     // Create a simple notification sound
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
-    
+
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
-    
+
     oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
     oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-    
+
     gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-    
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      audioContext.currentTime + 0.2
+    );
+
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.2);
   };
@@ -221,7 +232,9 @@ const Messages = () => {
       }
     } catch (error) {
       console.error("Load conversations error:", error);
-      setError(error.response?.data?.message || "Erreur chargement conversations");
+      setError(
+        error.response?.data?.message || "Erreur chargement conversations"
+      );
     }
   };
 
@@ -232,7 +245,7 @@ const Messages = () => {
       if (response.success) {
         setSelectedConversation(response.data);
         setMessages(response.data.messages || []);
-        
+
         // Start SSE connection for real-time messages
         startSSEConnection(conversationId);
       } else {
@@ -240,7 +253,9 @@ const Messages = () => {
       }
     } catch (error) {
       console.error("Load conversation error:", error);
-      setError(error.response?.data?.message || "Erreur chargement conversation");
+      setError(
+        error.response?.data?.message || "Erreur chargement conversation"
+      );
     }
   };
 
@@ -262,16 +277,19 @@ const Messages = () => {
         id: user.id,
         name: user.name,
       },
-      isOptimistic: true // Flag to identify optimistic message
+      isOptimistic: true, // Flag to identify optimistic message
     };
 
     // Add optimistic message immediately
-    setMessages(prev => [...prev, optimisticMessage]);
+    setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
       setSending(true);
-      const response = await ApiService.sendMessage(selectedConversation.id, messageContent);
-      
+      const response = await ApiService.sendMessage(
+        selectedConversation.id,
+        messageContent
+      );
+
       if (response.success) {
         // Replace optimistic message with real message
         const realMessage = {
@@ -282,32 +300,40 @@ const Messages = () => {
           created_at: response.data.created_at,
           sender: response.data.sender,
         };
-        
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.isOptimistic && msg.content === messageContent 
-              ? realMessage 
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.isOptimistic && msg.content === messageContent
+              ? realMessage
               : msg
           )
         );
-        
+
         // Update conversation's last message
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === selectedConversation.id 
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === selectedConversation.id
               ? { ...conv, last_message_at: response.data.created_at }
               : conv
           )
         );
       } else {
         // Remove optimistic message if failed
-        setMessages(prev => prev.filter(msg => !msg.isOptimistic || msg.content !== messageContent));
+        setMessages((prev) =>
+          prev.filter(
+            (msg) => !msg.isOptimistic || msg.content !== messageContent
+          )
+        );
         setError(response.message || "Erreur envoi message");
       }
     } catch (error) {
       console.error("Send message error:", error);
       // Remove optimistic message if failed
-      setMessages(prev => prev.filter(msg => !msg.isOptimistic || msg.content !== messageContent));
+      setMessages((prev) =>
+        prev.filter(
+          (msg) => !msg.isOptimistic || msg.content !== messageContent
+        )
+      );
       setError(error.response?.data?.message || "Erreur envoi message");
     } finally {
       setSending(false);
@@ -361,7 +387,6 @@ const Messages = () => {
     <div className="container-fluid py-4">
       <style>{`
         .messages-container {
-          /* height: calc(100vh - 200px); */
           min-height: 500px;
           border: 1px solid #dee2e6;
           border-radius: 10px;
@@ -374,23 +399,39 @@ const Messages = () => {
         }
         .conversation-item {
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: background-color 0.2s, box-shadow 0.2s;
+          padding: 12px 15px;
         }
         .conversation-item:hover {
-          background-color: #f8f9fa;
+          background-color: #e0f7fa;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .conversation-item.active {
           background-color: #e3f2fd;
+          box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
         }
         .chat-container {
           height: 100%;
           display: flex;
           flex-direction: column;
+          min-height: 550px; /* Increased to prevent retracted look */
         }
         .chat-header {
           background-color: #f8f9fa;
           border-bottom: 1px solid #dee2e6;
           padding: 15px;
+          display: flex;
+          align-items: center;
+        }
+        .chat-header .user-info h5 {
+          margin: 0;
+          font-size: 1.25rem;
+          font-weight: bold;
+        }
+        .chat-header .user-info .trajet {
+          font-size: 0.9rem;
+          color: #6c757d;
+          margin-top: 2px;
         }
         .messages-list {
           flex: 1;
@@ -398,8 +439,8 @@ const Messages = () => {
           padding: 15px;
         }
         .message {
-          margin-bottom: 15px;
-          max-width: 70%;
+          margin-bottom: 10px;
+          max-width: 60%; /* Reduced from 70% to narrow width */
         }
         .message.sent {
           margin-left: auto;
@@ -408,9 +449,10 @@ const Messages = () => {
           margin-right: auto;
         }
         .message-bubble {
-          padding: 10px 15px;
-          border-radius: 18px;
+          padding: 10px 15px; /* Increased to improve height */
+          border-radius: 15px;
           word-wrap: break-word;
+          font-size: 0.85rem; /* Reduced from 0.95rem */
         }
         .message.sent .message-bubble {
           background-color: #007bff;
@@ -450,6 +492,52 @@ const Messages = () => {
           z-index: 1000;
           animation: pulse 2s infinite;
         }
+        .user-badge {
+          background-color: #e9ecef;
+          color: #212529;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 1.1rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .trajet-info {
+          background-color: #f8f9fa;
+          padding: 5px 10px;
+          border-radius: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 6px;
+        }
+        .message-preview {
+          background-color: #fff;
+          padding: 6px 10px;
+          border-radius: 6px;
+          border: 1px solid #dee2e6;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          max-width: 100%;
+          font-size: 0.9rem;
+          margin-top: 4px;
+        }
+        .time-stamp {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.85rem;
+          color: #6c757d;
+        }
+        .sidebarHeader {
+          font-size: 1.25rem;
+          font-weight: bold;
+          margin-bottom: 1rem;
+          text-align: center;
+          padding-left: 20px; /* Added padding to the left */
+        }
         @keyframes pulse {
           0% { opacity: 1; }
           50% { opacity: 0.7; }
@@ -460,9 +548,20 @@ const Messages = () => {
       {/* Real-time indicator */}
       {selectedConversation && (
         <div className="realtime-indicator">
-          <i className={`fas fa-circle me-1 ${connectionStatus === 'connected' ? 'text-success' : connectionStatus === 'connecting' ? 'text-warning' : 'text-danger'}`}></i>
-          {connectionStatus === 'connected' ? 'En temps réel' : 
-           connectionStatus === 'connecting' ? 'Connexion...' : 'Déconnecté'}
+          <i
+            className={`fas fa-circle me-1 ${
+              connectionStatus === "connected"
+                ? "text-success"
+                : connectionStatus === "connecting"
+                ? "text-warning"
+                : "text-danger"
+            }`}
+          ></i>
+          {connectionStatus === "connected"
+            ? "En temps réel"
+            : connectionStatus === "connecting"
+            ? "Connexion..."
+            : "Déconnecté"}
         </div>
       )}
 
@@ -490,41 +589,49 @@ const Messages = () => {
               <div className="col-md-4 p-0">
                 <div className="conversations-list">
                   <div className="p-3 border-bottom">
-                    <h5 className="mb-0">Conversations</h5>
+                    <h5 className="sidebarHeader">Conversations</h5>
                   </div>
                   {conversations.length > 0 ? (
                     conversations.map((conversation) => (
                       <div
                         key={conversation.id}
                         className={`conversation-item p-3 border-bottom ${
-                          selectedConversation?.id === conversation.id ? "active" : ""
+                          selectedConversation?.id === conversation.id
+                            ? "active"
+                            : ""
                         }`}
                         onClick={() => loadConversation(conversation.id)}
                       >
                         <div className="d-flex justify-content-between align-items-start">
                           <div className="flex-grow-1">
                             <h6 className="mb-1">
-                              {conversation.other_user?.name}
+                              <span className="user-badge">
+                                <i className="fas fa-user"></i>
+                                {conversation.other_user?.name}
+                              </span>
                               {conversation.unread_count > 0 && (
                                 <span className="unread-badge">
                                   {conversation.unread_count}
                                 </span>
                               )}
                             </h6>
-                            <p className="mb-1 text-muted small">
-                              {getLastMessagePreview(conversation)}
-                            </p>
                             {conversation.ride && (
-                              <small className="text-primary">
-                                Trajet: {conversation.ride.from} → {conversation.ride.to}
+                              <small className="trajet-info">
+                                <i className="fas fa-map-marker-alt"></i>
+                                Trajet: {conversation.ride.from} →{" "}
+                                {conversation.ride.to}
                               </small>
                             )}
+                            <div className="message-preview mt-1">
+                              {getLastMessagePreview(conversation)}
+                            </div>
                           </div>
-                          <small className="text-muted">
+                          <div className="time-stamp">
+                            <i className="fas fa-clock"></i>
                             {conversation.last_message_at
                               ? formatDate(conversation.last_message_at)
                               : ""}
-                          </small>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -544,32 +651,28 @@ const Messages = () => {
                     <>
                       {/* Chat Header */}
                       <div className="chat-header">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <h5 className="mb-0">
-                              {selectedConversation.other_user?.name}
-                            </h5>
-                            {selectedConversation.ride && (
-                              <small className="text-muted">
-                                Trajet: {selectedConversation.ride.from} → {selectedConversation.ride.to}
-                              </small>
-                            )}
-                          </div>
-                          <button
-                            className="btn btn-outline-secondary btn-sm"
-                            onClick={() => {
-                              setSelectedConversation(null);
-                              setMessages([]);
-                              if (eventSourceRef.current) {
-                                eventSourceRef.current.close();
-                              }
-                            }}
-                          >
-                            <i className="fas fa-times"></i>
-                          </button>
+                        <div className="user-info">
+                          <h5>{selectedConversation.other_user?.name}</h5>
+                          {selectedConversation.ride && (
+                            <div className="trajet">
+                              Trajet: {selectedConversation.ride.from} →{" "}
+                              {selectedConversation.ride.to}
+                            </div>
+                          )}
                         </div>
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => {
+                            setSelectedConversation(null);
+                            setMessages([]);
+                            if (eventSourceRef.current) {
+                              eventSourceRef.current.close();
+                            }
+                          }}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
                       </div>
-
                       {/* Messages List */}
                       <div className="messages-list">
                         {messages.length > 0 ? (
@@ -577,11 +680,15 @@ const Messages = () => {
                             <div
                               key={message.id}
                               className={`message ${
-                                message.sender_id === user?.id ? "sent" : "received"
+                                message.sender_id === user?.id
+                                  ? "sent"
+                                  : "received"
                               }`}
                             >
                               <div className="message-bubble">
-                                <div className="message-content">{message.content}</div>
+                                <div className="message-content">
+                                  {message.content}
+                                </div>
                                 <small className="message-time">
                                   {formatDate(message.created_at)}
                                 </small>
@@ -596,7 +703,6 @@ const Messages = () => {
                         )}
                         <div ref={messagesEndRef} />
                       </div>
-
                       {/* Message Input */}
                       <div className="message-input-container">
                         <form onSubmit={handleSendMessage}>
@@ -629,7 +735,10 @@ const Messages = () => {
                       <div className="text-center text-muted">
                         <i className="fas fa-comments fa-3x mb-3"></i>
                         <h5>Sélectionnez une conversation</h5>
-                        <p>Choisissez une conversation pour commencer à discuter en temps réel</p>
+                        <p>
+                          Choisissez une conversation pour commencer à discuter
+                          en temps réel
+                        </p>
                       </div>
                     </div>
                   )}

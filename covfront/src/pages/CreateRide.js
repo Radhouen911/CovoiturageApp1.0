@@ -76,6 +76,7 @@ const CreateRide = () => {
     if (!rideData.available_seats || rideData.available_seats <= 0) {
       newErrors.available_seats = "Le nombre de places doit être supérieur à 0";
     }
+    if (!rideData.car.trim()) newErrors.car = "Le modèle de voiture est requis"; // Added car validation
 
     // Date validation (cannot be in the past)
     const selectedDate = new Date(rideData.date + "T" + rideData.time);
@@ -163,7 +164,7 @@ const CreateRide = () => {
 
         // Redirect to profile or search page after a short delay
         setTimeout(() => {
-          navigate("/profilePage", {
+          navigate("/", {
             state: {
               successMessage: "Votre trajet a été publié avec succès !",
             },
@@ -453,26 +454,29 @@ const CreateRide = () => {
                   </div>
 
                   <div className="col-12">
-                    <label className="form-label">Modèle de voiture</label>
+                    <label className="form-label">Modèle de voiture *</label>
                     <input
                       type="text"
-                      className="form-control"
+                      className={`form-control ${
+                        errors.car ? "is-invalid" : ""
+                      }`}
                       name="car"
                       value={rideData.car}
                       onChange={handleChange}
                       placeholder="Ex: Renault Clio, Peugeot 208..."
+                      required
                       disabled={isSubmitting}
                     />
-                    <small className="text-muted">
-                      Optionnel - Aide les passagers à vous identifier
-                    </small>
+                    {errors.car && (
+                      <div className="error-message">{errors.car}</div>
+                    )}
                   </div>
 
                   {/* Amenities */}
                   <div className="col-12 mt-4">
                     <h5 className="text-primary section-header">
                       <i className="fas fa-star me-2"></i>
-                      Équipements disponibles
+                      Commodités{" "}
                     </h5>
                     <div className="row g-2">
                       {amenitiesList.map((amenity) => (

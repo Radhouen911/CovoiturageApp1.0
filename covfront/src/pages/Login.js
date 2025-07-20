@@ -67,7 +67,7 @@ const Login = () => {
       console.log("Login successful:", response);
 
       if (response.success) {
-        navigate("/profilePage");
+        navigate("/");
       } else {
         setErrors({
           form: response.message || "Erreur de connexion",

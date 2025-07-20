@@ -29,7 +29,7 @@ const CreateTicket = () => {
     setIsSubmitting(true);
 
     if (!isLoggedIn || !user) {
-      setError("Please log in to create a ticket.");
+      setError("Veuillez vous connecter pour créer un ticket.");
       setIsSubmitting(false);
       return;
     }
@@ -43,15 +43,15 @@ const CreateTicket = () => {
       });
 
       if (response.success) {
-        setSuccess("Ticket created successfully!");
+        setSuccess("Ticket créé avec succès !");
         setFormData({ subject: "", description: "", ride_id: "" });
         setTimeout(() => navigate("/my-tickets"), 2000); // Navigate to user's tickets
       } else {
-        setError(response.message || "Failed to create ticket.");
+        setError(response.message || "Échec de la création du ticket.");
       }
     } catch (error) {
-      console.error("Error creating ticket:", error);
-      setError("An error occurred. Please try again later.");
+      console.error("Erreur lors de la création du ticket :", error);
+      setError("Une erreur est survenue. Veuillez réessayer plus tard.");
     } finally {
       setIsSubmitting(false);
     }
@@ -87,10 +87,10 @@ const CreateTicket = () => {
               marginBottom: "0.5rem",
             }}
           >
-            Authentication Required
+            Authentification Requise
           </h2>
           <p style={{ color: "#718096", marginBottom: "2rem" }}>
-            Please log in to file a complaint.
+            Veuillez vous connecter pour soumettre une réclamation.
           </p>
           <button
             onClick={() => navigate("/login")}
@@ -113,7 +113,7 @@ const CreateTicket = () => {
               e.target.style.boxShadow = "none";
             }}
           >
-            Go to Login
+            Aller à la Connexion
           </button>
         </div>
       </div>
@@ -162,10 +162,11 @@ const CreateTicket = () => {
               marginBottom: "0.5rem",
             }}
           >
-            File a Complaint
+            Soumettre une Réclamation
           </h1>
           <p style={{ color: "#718096", fontSize: "1rem", lineHeight: "1.5" }}>
-            We're here to help resolve any issues you may have encountered.
+            Nous sommes là pour aider à résoudre les problèmes que vous avez
+            rencontrés.
           </p>
         </div>
 
@@ -223,7 +224,7 @@ const CreateTicket = () => {
                 fontSize: "0.95rem",
               }}
             >
-              Subject *
+              Sujet *
             </label>
             <input
               type="text"
@@ -239,7 +240,7 @@ const CreateTicket = () => {
                 transition: "all 0.2s ease",
                 backgroundColor: "#f7fafc",
               }}
-              placeholder="Brief description of your issue"
+              placeholder="Brève description de votre problème"
               required
               disabled={isSubmitting}
             />
@@ -273,7 +274,7 @@ const CreateTicket = () => {
                 minHeight: "120px",
                 fontFamily: "inherit",
               }}
-              placeholder="Please provide detailed information about your complaint..."
+              placeholder="Veuillez fournir des informations détaillées sur votre réclamation..."
               rows="6"
               required
               disabled={isSubmitting}
@@ -290,7 +291,7 @@ const CreateTicket = () => {
                 fontSize: "0.95rem",
               }}
             >
-              Ride ID{" "}
+              ID de Trajet{" "}
               <span
                 style={{
                   color: "#718096",
@@ -298,7 +299,7 @@ const CreateTicket = () => {
                   fontSize: "0.85rem",
                 }}
               >
-                (optional)
+                (facultatif)
               </span>
             </label>
             <input
@@ -315,7 +316,7 @@ const CreateTicket = () => {
                 transition: "all 0.2s ease",
                 backgroundColor: "#f7fafc",
               }}
-              placeholder="Enter ride ID if complaint is related to a specific ride"
+              placeholder="Entrez l'ID de trajet si la réclamation est liée à un trajet spécifique"
               disabled={isSubmitting}
             />
           </div>
@@ -355,7 +356,7 @@ const CreateTicket = () => {
                 }
               }}
             >
-              Cancel
+              Annuler
             </button>
             <button
               type="submit"
@@ -402,10 +403,10 @@ const CreateTicket = () => {
                       animation: "spin 1s linear infinite",
                     }}
                   />
-                  Submitting...
+                  Soumission en cours...
                 </>
               ) : (
-                "Submit Complaint"
+                "Soumettre la Réclamation"
               )}
             </button>
           </div>
@@ -423,7 +424,7 @@ const CreateTicket = () => {
           }}
         >
           <p style={{ color: "#4a5568", fontSize: "0.95rem", marginBottom: 0 }}>
-            Have an existing complaint? Consult your tickets here:
+            Vous avez une réclamation existante ? Consultez vos tickets ici :
           </p>
           <button
             type="button"
@@ -455,7 +456,7 @@ const CreateTicket = () => {
               e.target.style.transform = "translateY(0)";
             }}
           >
-            Consult My Tickets
+            Consulter Mes Tickets
           </button>
         </div>
       </div>

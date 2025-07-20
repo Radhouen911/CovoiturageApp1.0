@@ -431,7 +431,59 @@ class ApiService {
       throw error;
     }
   }
+  async getGeneralStats() {
+    try {
+      const response = await api.get("/stats");
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get general stats failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
 
+  async getAllUsers() {
+    // Assuming this endpoint returns a list of all users for an admin
+    // If your /api/user only returns the current user, you'll need a new backend route like /api/admin/users
+    try {
+      const response = await api.get("/user"); // This might need to be /admin/users if /user only returns current user
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get all users failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+
+  async getAllBookings() {
+    try {
+      const response = await api.get("/bookings");
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get all bookings failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
+
+  async getNotifications() {
+    try {
+      const response = await api.get("/notifications");
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Get notifications failed:",
+        error.response?.data || error.message
+      );
+      throw error;
+    }
+  }
   async getDriverLocation(rideId) {
     try {
       const response = await api.get(`/rides/${rideId}/driver-location`);

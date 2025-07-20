@@ -36,6 +36,29 @@ const RideCard = ({ ride }) => {
       ? ride.amenities.split(",").filter((a) => a.trim())
       : ride.amenities || [];
 
+  // Calculate star rating with half-star support
+  const renderStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const stars = [];
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<i key={i} className="fas fa-star text-warning"></i>);
+    }
+    if (hasHalfStar) {
+      stars.push(
+        <i key="half" className="fas fa-star-half-alt text-warning"></i>
+      );
+    }
+    const emptyStars = 5 - Math.ceil(rating);
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <i key={`empty-${i}`} className="far fa-star text-warning"></i>
+      );
+    }
+    return stars;
+  };
+
   return (
     <div className="card ride-card shadow-sm">
       <style>{`
@@ -75,6 +98,13 @@ const RideCard = ({ ride }) => {
         .amenity-badge {
           font-size: 0.75rem;
           padding: 4px 8px;
+          background-color: #ffffff; /* White background */
+          color: #000000; /* Black text */
+        }
+        .rating-stars {
+          display: flex;
+          gap: 2px;
+          align-items: center;
         }
       `}</style>
 
@@ -93,8 +123,8 @@ const RideCard = ({ ride }) => {
                 {ride.driver?.name || "Conducteur"}
               </small>
               {ride.driver?.rating && (
-                <div className="text-warning">
-                  {"★".repeat(Math.floor(ride.driver.rating))}
+                <div className="rating-stars">
+                  {renderStars(ride.driver.rating)}
                   <small className="text-muted ms-1">
                     {ride.driver.rating}
                   </small>
@@ -152,10 +182,7 @@ const RideCard = ({ ride }) => {
             <div className="col-12">
               <div className="amenities d-flex gap-2 flex-wrap">
                 {amenitiesList.map((amenity, index) => (
-                  <span
-                    key={index}
-                    className="badge bg-light text-dark amenity-badge"
-                  >
+                  <span key={index} className="badge amenity-badge">
                     <i className={`${getAmenityIcon(amenity.trim())} me-1`}></i>
                     {amenity.trim().replace("-", " ")}
                   </span>

@@ -7,10 +7,12 @@ import {
   FaFilter,
   FaHeart,
   FaMapMarkerAlt,
+  FaRegStar,
   FaSearch,
   FaShare,
   FaSort,
   FaStar,
+  FaStarHalfAlt,
   FaUser,
 } from "react-icons/fa";
 import { Link } from "react-router-dom";
@@ -143,17 +145,29 @@ const SearchRides = () => {
   };
 
   const formatPrice = (price) => {
-    return `${price}€`;
+    return `${price} TND`; // Changed from € to TND
   };
 
-  const getRatingStars = (rating) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <FaStar
-        key={i}
-        className={i < rating ? "text-warning" : "text-muted"}
-        size={14}
-      />
-    ));
+  const renderStars = (rating) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    const stars = [];
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<FaStar key={i} className="text-warning" size={14} />);
+    }
+    if (hasHalfStar) {
+      stars.push(
+        <FaStarHalfAlt key="half" className="text-warning" size={14} />
+      );
+    }
+    const emptyStars = 5 - Math.ceil(rating);
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <FaRegStar key={`empty-${i}`} className="text-warning" size={14} />
+      );
+    }
+    return stars;
   };
 
   const isDefaultFilters =
@@ -322,7 +336,7 @@ const SearchRides = () => {
                       <input
                         type="number"
                         className="form-control"
-                        placeholder="0€"
+                        placeholder="0 TND"
                         value={filters.priceMin}
                         onChange={(e) =>
                           handleFilterChange("priceMin", e.target.value)
@@ -334,7 +348,7 @@ const SearchRides = () => {
                       <input
                         type="number"
                         className="form-control"
-                        placeholder="100€"
+                        placeholder="100 TND"
                         value={filters.priceMax}
                         onChange={(e) =>
                           handleFilterChange("priceMax", e.target.value)
@@ -393,25 +407,39 @@ const SearchRides = () => {
                   {rides.map((ride) => (
                     <div className="col-lg-6 col-xl-4" key={ride.id}>
                       <div className="card ride-card h-100">
-                        <div className="card-header bg-gradient text-white">
+                        <div
+                          className="card-header bg-light"
+                          style={{ color: "#000000" }}
+                        >
                           <div className="d-flex justify-content-between align-items-center">
                             <div>
-                              <h6 className="mb-1">
+                              <h6 className="mb-1" style={{ color: "#000000" }}>
                                 {ride.driver?.name || "Conducteur"}
                               </h6>
                               <div className="rating">
-                                {getRatingStars(ride.driver?.rating || 0)}
-                                <span className="ms-2 text-white-50">
+                                {renderStars(ride.driver?.rating || 0)}
+                                <span
+                                  className="ms-2"
+                                  style={{ color: "#000000" }}
+                                >
                                   ({ride.driver?.rating || 0}/5)
                                 </span>
                               </div>
                             </div>
                             <div className="text-end">
                               <div className="price-display">
-                                <span className="amount">
+                                <span
+                                  className="amount"
+                                  style={{ color: "#000000" }}
+                                >
                                   {formatPrice(ride.price)}
                                 </span>
-                                <span className="currency">par personne</span>
+                                <span
+                                  className="currency"
+                                  style={{ color: "#000000" }}
+                                >
+                                  par personne
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -440,7 +468,12 @@ const SearchRides = () => {
                               <div className="col-6">
                                 <small className="text-muted">Heure</small>
                                 <div className="fw-bold">
-                                  {formatTime(ride.time)}
+                                  {(() => {
+                                    // Try to extract HH:MM from ride.time
+                                    const match =
+                                      ride.time.match(/T(\d{2}:\d{2})/);
+                                    return match ? match[1] : "";
+                                  })()}
                                 </div>
                               </div>
                               <div className="col-6">
@@ -461,13 +494,17 @@ const SearchRides = () => {
                           {ride.amenities && ride.amenities.length > 0 && (
                             <div className="amenities mb-3">
                               <small className="text-muted d-block mb-2">
-                                Équipements
+                                Commodités
                               </small>
                               <div className="d-flex flex-wrap gap-1">
                                 {ride.amenities.map((amenity) => (
                                   <span
                                     key={amenity}
-                                    className="badge bg-light text-dark"
+                                    className="badge"
+                                    style={{
+                                      backgroundColor: "#ffffff",
+                                      color: "#000000",
+                                    }}
                                   >
                                     {amenity}
                                   </span>
@@ -615,16 +652,20 @@ const SearchRides = () => {
           font-size: 1.25rem;
           font-weight: 700;
           display: block;
+          color: #000000; /* Ensure price is black */
         }
 
         .price-display .currency {
           font-size: 0.875rem;
           opacity: 0.9;
+          color: #000000; /* Ensure currency text is black */
         }
 
         .amenities .badge {
           font-size: 0.75rem;
           padding: 0.5em 0.75em;
+          background-color: #ffffff; /* White background */
+          color: #000000; /* Black text */
         }
 
         .card-actions {
@@ -636,10 +677,11 @@ const SearchRides = () => {
         .rating {
           display: flex;
           align-items: center;
+          gap: 2px; /* Consistent spacing between stars */
         }
 
-        .rating .fa-star {
-          margin-right: 0.125rem;
+        .card-header {
+          color: #000000 !important; /* Override any white text */
         }
 
         @media (max-width: 768px) {

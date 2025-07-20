@@ -14,7 +14,7 @@ const TicketList = ({ onSelectTicket }) => {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate("/login"); // Redirect to login if not authenticated
+      navigate("/login");
       return;
     }
 
@@ -24,17 +24,19 @@ const TicketList = ({ onSelectTicket }) => {
       try {
         const response = await ApiService.getTickets();
         if (response.success) {
-          // Sort tickets by latest update
+          // Trier les tickets par dernière mise à jour
           const sortedTickets = response.data.sort((a, b) => {
             return new Date(b.updated_at) - new Date(a.updated_at);
           });
           setTickets(sortedTickets);
         } else {
-          setError(response.message || "Failed to fetch tickets.");
+          setError(response.message || "Échec de la récupération des tickets.");
         }
       } catch (err) {
-        console.error("Error fetching tickets:", err);
-        setError("An error occurred while fetching tickets.");
+        console.error("Erreur lors de la récupération des tickets :", err);
+        setError(
+          "Une erreur est survenue lors de la récupération des tickets."
+        );
       } finally {
         setLoading(false);
       }
@@ -43,7 +45,7 @@ const TicketList = ({ onSelectTicket }) => {
     fetchTickets();
   }, [isLoggedIn, navigate]);
 
-  // Helper for status badge styling
+  // Aide pour le style du badge de statut
   const getStatusBadge = (status) => {
     const styles = {
       open: {
@@ -126,7 +128,7 @@ const TicketList = ({ onSelectTicket }) => {
             color: "#4a5568",
           }}
         >
-          Loading tickets...
+          Chargement des tickets...
         </div>
       </div>
     );
@@ -182,7 +184,7 @@ const TicketList = ({ onSelectTicket }) => {
           textAlign: "center",
         }}
       >
-        Your Support Tickets
+        Vos Tickets de Support
       </h2>
       {tickets.length === 0 ? (
         <div
@@ -197,7 +199,7 @@ const TicketList = ({ onSelectTicket }) => {
             gap: "1.5rem",
           }}
         >
-          You haven't opened any support tickets yet.
+          Vous n'avez pas encore ouvert de tickets de support.
           <button
             style={{
               backgroundColor: "#4299e1",
@@ -214,14 +216,14 @@ const TicketList = ({ onSelectTicket }) => {
             onMouseEnter={(e) => (e.target.style.backgroundColor = "#3182ce")}
             onMouseLeave={(e) => (e.target.style.backgroundColor = "#4299e1")}
           >
-            Start a New Ticket
+            Démarrer un Nouveau Ticket
           </button>
         </div>
       ) : (
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: "1.5rem",
           }}
         >
@@ -302,12 +304,12 @@ const TicketList = ({ onSelectTicket }) => {
                     color: "#718096",
                   }}
                 >
-                  <span>ID: #{ticket.id}</span>
+                  <span>ID : #{ticket.id}</span>
                   {ticket.priority && (
-                    <span>Priority: {getPriorityBadge(ticket.priority)}</span>
+                    <span>Priorité : {getPriorityBadge(ticket.priority)}</span>
                   )}
                   <span>
-                    Created: {new Date(ticket.created_at).toLocaleDateString()}
+                    Créé le : {new Date(ticket.created_at).toLocaleDateString()}
                   </span>
                 </div>
               </div>

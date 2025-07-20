@@ -31,7 +31,37 @@ export default function AdminDashboard() {
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [errorTickets, setErrorTickets] = useState(null);
 
-  // Fetch tickets from backend
+  // States for dynamic data
+  const [rideStats, setRideStats] = useState({ labels: [], datasets: [] });
+  const [contributorData, setContributorData] = useState({
+    labels: [],
+    datasets: [],
+  });
+  const [stats, setStats] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [errorStats, setErrorStats] = useState(null);
+  const [activeDriversCount, setActiveDriversCount] = useState(0); // Declare activeDriversCount
+
+  // Helper to get icon based on notification type
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case "ride_request":
+        return "🚗";
+      case "booking_completed":
+        return "✅";
+      case "ticket_update":
+        return "🎫";
+      case "payment":
+        return "💳";
+      case "driver_registration":
+        return "👤";
+      default:
+        return "🔔";
+    }
+  };
+
+  // Fetch tickets from backend (kept separate as it's already working)
   useEffect(() => {
     const fetchTickets = async () => {
       setLoadingTickets(true);
@@ -39,7 +69,6 @@ export default function AdminDashboard() {
       try {
         const response = await ApiService.getTickets();
         if (response.success) {
-          // Sort tickets by latest update
           const sortedTickets = response.data.sort((a, b) => {
             return new Date(b.updated_at) - new Date(a.updated_at);
           });
@@ -62,52 +91,189 @@ export default function AdminDashboard() {
     fetchTickets();
   }, []);
 
-  // Mock data for charts (can be replaced with real data fetching later)
-  const rideStats = {
-    labels: ["Total", "Accepted", "Rejected"],
-    datasets: [
-      {
-        label: "Rides",
-        data: [120, 90, 10],
-        backgroundColor: [
-          "rgba(59, 130, 246, 0.8)",
-          "rgba(34, 197, 94, 0.8)",
-          "rgba(239, 68, 68, 0.8)",
-        ],
-        borderColor: [
-          "rgb(59, 130, 246)",
-          "rgb(34, 197, 94)",
-          "rgb(239, 68, 68)",
-        ],
-        borderWidth: 2,
-        borderRadius: 8,
-        borderSkipped: false,
-      },
-    ],
-  };
+  // Fetch dynamic data for charts and stats cards
+  useEffect(() => {
+    const fetchDynamicData = async () => {
+      setLoadingStats(true);
+      setErrorStats(null);
+      try {
+        // 1. Fetch general stats
+        const generalStatsResponse = await ApiService.getGeneralStats();
+        const { totalRides, totalUsers, totalTrips } =
+          generalStatsResponse.data || {};
 
-  const contributorData = {
-    labels: ["Driver A", "Driver B", "Driver C", "Driver D"],
-    datasets: [
-      {
-        label: "Trips Completed",
-        data: [35, 25, 20, 20],
-        backgroundColor: [
-          "rgba(147, 51, 234, 0.8)",
-          "rgba(236, 72, 153, 0.8)",
-          "rgba(59, 130, 246, 0.8)",
-          "rgba(245, 158, 11, 0.8)",
-        ],
-        borderColor: [
-          "rgb(147, 51, 234)",
-          "rgb(236, 72, 153)",
-          "rgb(59, 130, 246)",
-          "rgb(245, 158, 11)",
-        ],
-        borderWidth: 3,
-      },
-    ],
-  };
+        // 2. Fetch all users to count drivers and map names
+        const usersResponse = await ApiService.getAllUsers();
+        const allUsers = Array.isArray(usersResponse.data)
+          ? usersResponse.data
+          : usersResponse.data?.users || [];
+        setActiveDriversCount(
+          allUsers.filter((user) => user.role === "driver").length
+        ); // Set activeDriversCount
+
+        // 3. Fetch all bookings for ride stats and driver contributions
+        const bookingsResponse = await ApiService.getAllBookings();
+        const allBookings = bookingsResponse.data || [];
+
+        const acceptedBookings = allBookings.filter(
+          (b) => b.status === "accepted"
+        ).length;
+        const rejectedBookings = allBookings.filter(
+          (b) => b.status === "rejected"
+        ).length;
+        const pendingBookings = allBookings.filter(
+          (b) => b.status === "pending"
+        ).length;
+        const completedBookings = allBookings.filter(
+          (b) => b.status === "completed"
+        ).length;
+
+        // Update Ride Statistics (Bar Chart)
+        setRideStats({
+          labels: ["Total", "Acceptés", "Rejetés", "En attente"],
+          datasets: [
+            {
+              label: "Trajets",
+              data: [
+                allBookings.length,
+                acceptedBookings,
+                rejectedBookings,
+                pendingBookings,
+              ],
+              backgroundColor: [
+                "rgba(59, 130, 246, 0.8)",
+                "rgba(34, 197, 94, 0.8)",
+                "rgba(239, 68, 68, 0.8)",
+                "rgba(245, 158, 11, 0.8)",
+              ],
+              borderColor: [
+                "rgb(59, 130, 246)",
+                "rgb(34, 197, 94)",
+                "rgb(239, 68, 68)",
+                "rgb(245, 158, 11)",
+              ],
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false,
+            },
+          ],
+        });
+
+        // Update Top Contributors (Pie Chart)
+        const driverTripCounts = {};
+        allBookings
+          .filter((b) => b.status === "completed" && b.driver_id)
+          .forEach((b) => {
+            driverTripCounts[b.driver_id] =
+              (driverTripCounts[b.driver_id] || 0) + 1;
+          });
+
+        const topDrivers = Object.entries(driverTripCounts)
+          .sort(([, countA], [, countB]) => countB - countA)
+          .slice(0, 4); // Get top 4 contributors
+
+        const contributorLabels = topDrivers.map(([driverId]) => {
+          const driver = allUsers.find(
+            (d) => d.id === Number.parseInt(driverId)
+          );
+          return driver ? driver.name : `Conducteur ${driverId}`;
+        });
+        const contributorValues = topDrivers.map(([, count]) => count);
+
+        setContributorData({
+          labels:
+            contributorLabels.length > 0
+              ? contributorLabels
+              : ["Aucune donnée"],
+          datasets: [
+            {
+              label: "Trajets Terminés",
+              data: contributorValues.length > 0 ? contributorValues : [1], // Default to 1 for "No Data" if no completed trips
+              backgroundColor: [
+                "rgba(147, 51, 234, 0.8)",
+                "rgba(236, 72, 153, 0.8)",
+                "rgba(59, 130, 246, 0.8)",
+                "rgba(245, 158, 11, 0.8)",
+              ],
+              borderColor: [
+                "rgb(147, 51, 234)",
+                "rgb(236, 72, 153)",
+                "rgb(59, 130, 246)",
+                "rgb(245, 158, 11)",
+              ],
+              borderWidth: 3,
+            },
+          ],
+        });
+
+        // Update Stats Cards
+        setStats([
+          {
+            label: "Total Trajets",
+            value: totalRides.toString(),
+            change: "+12%", // Mocked change
+            icon: "🚗",
+            trend: "up",
+            bgColor: "#eff6ff",
+            iconColor: "#2563eb",
+          },
+          {
+            label: "Conducteurs Actifs",
+            value: activeDriversCount.toString(),
+            change: "+5%", // Mocked change
+            icon: "👨‍💼",
+            trend: "up",
+            bgColor: "#f0fdf4",
+            iconColor: "#16a34a",
+          },
+          {
+            label: "Revenu",
+            value: "45,678 TND", // Still mocked, as no API for this
+            change: "+8%", // Mocked change
+            icon: "💰",
+            trend: "up",
+            bgColor: "#faf5ff",
+            iconColor: "#9333ea",
+          },
+          {
+            label: "Tickets Ouverts",
+            value: tickets.filter((t) => t.status === "open").length.toString(), // Dynamic count from tickets state
+            change: "-3%", // Mocked change
+            icon: "🎫",
+            trend: "down",
+            bgColor: "#fff7ed",
+            iconColor: "#ea580c",
+          },
+        ]);
+
+        // Fetch Recent Activity (Notifications)
+        const notificationsResponse = await ApiService.getNotifications();
+        const recentNotifications = (notificationsResponse.data || [])
+          .slice(0, 5) // Take top 5
+          .map((n) => ({
+            time: new Date(n.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            action: n.message, // Assuming notification has a 'message' field
+            type: n.type || "general", // Assuming notification has a 'type' field
+            icon: getNotificationIcon(n.type),
+          }));
+        setRecentActivity(recentNotifications);
+      } catch (error) {
+        console.error(
+          "Erreur lors du chargement des données dynamiques :",
+          error
+        );
+        setErrorStats(
+          "Une erreur est survenue lors du chargement des données."
+        );
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+    fetchDynamicData();
+  }, [tickets]); // Dependency on tickets to ensure open tickets stat updates
 
   const barOptions = {
     responsive: true,
@@ -116,7 +282,7 @@ export default function AdminDashboard() {
       legend: { display: false },
       title: {
         display: true,
-        text: "Ride Statistics",
+        text: "Statistiques des trajets",
         font: { size: 20, weight: "bold" },
         color: "#1f2937",
       },
@@ -151,7 +317,7 @@ export default function AdminDashboard() {
       },
       title: {
         display: true,
-        text: "Top Contributors",
+        text: "Meilleurs contributeurs",
         font: { size: 20, weight: "bold" },
         color: "#1f2937",
       },
@@ -222,79 +388,6 @@ export default function AdminDashboard() {
       </span>
     );
   };
-
-  // Mock data for stats and recent activity (can be replaced with real data later)
-  const stats = [
-    {
-      label: "Total Rides",
-      value: "1,234",
-      change: "+12%",
-      icon: "🚗",
-      trend: "up",
-      bgColor: "#eff6ff",
-      iconColor: "#2563eb",
-    },
-    {
-      label: "Active Drivers",
-      value: "89",
-      change: "+5%",
-      icon: "👨‍💼",
-      trend: "up",
-      bgColor: "#f0fdf4",
-      iconColor: "#16a34a",
-    },
-    {
-      label: "Revenue",
-      value: "45,678 TND",
-      change: "+8%",
-      icon: "💰",
-      trend: "up",
-      bgColor: "#faf5ff",
-      iconColor: "#9333ea",
-    },
-    {
-      label: "Open Tickets",
-      value: tickets.filter((t) => t.status === "open").length.toString(), // Dynamic count
-      change: "-3%",
-      icon: "🎫",
-      trend: "down",
-      bgColor: "#fff7ed",
-      iconColor: "#ea580c",
-    },
-  ];
-
-  const recentActivity = [
-    {
-      time: "2 mins ago",
-      action: "New ride request from User 205",
-      type: "ride",
-      icon: "🚗",
-    },
-    {
-      time: "5 mins ago",
-      action: "Driver 42 completed a trip",
-      type: "completed",
-      icon: "✅",
-    },
-    {
-      time: "8 mins ago",
-      action: "Support ticket #125 resolved",
-      type: "ticket",
-      icon: "🎫",
-    },
-    {
-      time: "12 mins ago",
-      action: "Payment of $45 processed",
-      type: "payment",
-      icon: "💳",
-    },
-    {
-      time: "15 mins ago",
-      action: "New driver registration approved",
-      type: "driver",
-      icon: "👤",
-    },
-  ];
 
   return (
     <div
@@ -390,80 +483,107 @@ export default function AdminDashboard() {
             marginBottom: "32px",
           }}
         >
-          {stats.map((stat, index) => (
+          {loadingStats ? (
             <div
-              key={index}
               style={{
+                textAlign: "center",
                 padding: "24px",
-                borderRadius: "12px",
-                boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
-                border: "1px solid #e5e7eb",
-                transition: "all 0.3s ease",
-                cursor: "pointer",
-                backgroundColor: stat.bgColor,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow =
-                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
-                e.currentTarget.style.transform = "translateY(-1px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow =
-                  "0 1px 3px 0 rgba(0, 0, 0, 0.1)";
-                e.currentTarget.style.transform = "translateY(0)";
+                gridColumn: "1 / -1",
               }}
             >
+              Chargement des statistiques...
+            </div>
+          ) : errorStats ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "24px",
+                color: "#c53030",
+                gridColumn: "1 / -1",
+              }}
+            >
+              {errorStats}
+            </div>
+          ) : (
+            stats.map((stat, index) => (
               <div
+                key={index}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "16px",
+                  padding: "24px",
+                  borderRadius: "12px",
+                  boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)",
+                  border: "1px solid #e5e7eb",
+                  transition: "all 0.3s ease",
+                  cursor: "pointer",
+                  backgroundColor: stat.bgColor,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 3px 0 rgba(0, 0, 0, 0.1)";
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
-                <div style={{ fontSize: "24px", color: stat.iconColor }}>
-                  {stat.icon}
-                </div>
                 <div
                   style={{
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    padding: "4px 8px",
-                    borderRadius: "9999px",
-                    backgroundColor:
-                      stat.trend === "up" ? "#dcfce7" : "#fef2f2",
-                    color: stat.trend === "up" ? "#166534" : "#991b1b",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: "16px",
                   }}
                 >
-                  {stat.change}
+                  <div style={{ fontSize: "24px", color: stat.iconColor }}>
+                    {stat.icon}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      padding: "4px 8px",
+                      borderRadius: "9999px",
+                      backgroundColor:
+                        stat.trend === "up" ? "#dcfce7" : "#fef2f2",
+                      color: stat.trend === "up" ? "#166534" : "#991b1b",
+                    }}
+                  >
+                    {stat.change}
+                  </div>
                 </div>
+                <p
+                  style={{
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#6b7280",
+                    marginBottom: "4px",
+                  }}
+                >
+                  {stat.label}
+                </p>
+                <p
+                  style={{
+                    fontSize: "24px",
+                    fontWeight: "bold",
+                    color: "#111827",
+                  }}
+                >
+                  {stat.value}
+                </p>
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#9ca3af",
+                    marginTop: "4px",
+                  }}
+                >
+                  du mois dernier
+                </p>
               </div>
-              <p
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#6b7280",
-                  marginBottom: "4px",
-                }}
-              >
-                {stat.label}
-              </p>
-              <p
-                style={{
-                  fontSize: "24px",
-                  fontWeight: "bold",
-                  color: "#111827",
-                }}
-              >
-                {stat.value}
-              </p>
-              <p
-                style={{ fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}
-              >
-                du mois dernier
-              </p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
         {/* Charts and Activity */}
         <div
@@ -505,7 +625,23 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div style={{ height: "320px" }}>
-                <Bar options={barOptions} data={rideStats} />
+                {loadingStats ? (
+                  <div style={{ textAlign: "center", padding: "24px" }}>
+                    Chargement du graphique...
+                  </div>
+                ) : errorStats ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "24px",
+                      color: "#c53030",
+                    }}
+                  >
+                    {errorStats}
+                  </div>
+                ) : (
+                  <Bar options={barOptions} data={rideStats} />
+                )}
               </div>
             </div>
             {/* Pie Chart */}
@@ -534,7 +670,23 @@ export default function AdminDashboard() {
                 </p>
               </div>
               <div style={{ height: "320px" }}>
-                <Pie options={pieOptions} data={contributorData} />
+                {loadingStats ? (
+                  <div style={{ textAlign: "center", padding: "24px" }}>
+                    Chargement du graphique...
+                  </div>
+                ) : errorStats ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "24px",
+                      color: "#c53030",
+                    }}
+                  >
+                    {errorStats}
+                  </div>
+                ) : (
+                  <Pie options={pieOptions} data={contributorData} />
+                )}
               </div>
             </div>
           </div>
@@ -580,57 +732,77 @@ export default function AdminDashboard() {
                 </h3>
               </div>
               <div style={{ maxHeight: "256px", overflowY: "auto" }}>
-                {recentActivity.map((activity, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: "12px",
-                      padding: "12px",
-                      borderRadius: "8px",
-                      transition: "background-color 0.2s ease",
-                      cursor: "pointer",
-                    }}
-                    onMouseEnter={(e) =>
-                      (e.currentTarget.style.backgroundColor = "#f9fafb")
-                    }
-                    onMouseLeave={(e) =>
-                      (e.currentTarget.style.backgroundColor = "transparent")
-                    }
-                  >
-                    <span
-                      style={{
-                        fontSize: "16px",
-                        flexShrink: 0,
-                        marginTop: "2px",
-                      }}
-                    >
-                      {activity.icon}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          color: "#374151",
-                          margin: "0 0 4px 0",
-                        }}
-                      >
-                        {activity.action}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: "12px",
-                          color: "#9ca3af",
-                          margin: 0,
-                        }}
-                      >
-                        {activity.time}
-                      </p>
-                    </div>
+                {loadingStats ? (
+                  <div style={{ textAlign: "center", padding: "12px" }}>
+                    Chargement de l'activité...
                   </div>
-                ))}
+                ) : errorStats ? (
+                  <div
+                    style={{
+                      textAlign: "center",
+                      padding: "12px",
+                      color: "#c53030",
+                    }}
+                  >
+                    {errorStats}
+                  </div>
+                ) : recentActivity.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "12px" }}>
+                    Aucune activité récente.
+                  </div>
+                ) : (
+                  recentActivity.map((activity, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "12px",
+                        padding: "12px",
+                        borderRadius: "8px",
+                        transition: "background-color 0.2s ease",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor = "#f9fafb")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      <span
+                        style={{
+                          fontSize: "16px",
+                          flexShrink: 0,
+                          marginTop: "2px",
+                        }}
+                      >
+                        {activity.icon}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#374151",
+                            margin: "0 0 4px 0",
+                          }}
+                        >
+                          {activity.action}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "12px",
+                            color: "#9ca3af",
+                            margin: 0,
+                          }}
+                        >
+                          {activity.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
             {/* Quick Actions */}
@@ -1119,7 +1291,7 @@ export default function AdminDashboard() {
               padding: "24px",
               maxWidth: "800px",
               width: "100%",
-              height: "90vh",
+              height: "90vh", // Set a max height for the modal content
               display: "flex",
               flexDirection: "column",
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
